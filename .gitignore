@@ -4,5 +4,7 @@ __pycache__/
 .pytest_cache/
 results/*.csv
 results/*.png
+results/*.gif
+results/*.mp4
 build/
 dist/
