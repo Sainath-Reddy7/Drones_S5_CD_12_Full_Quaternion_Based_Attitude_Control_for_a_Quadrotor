@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quadrotor Live Attitude Simulator</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;height:100vh;overflow:hidden;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif}
+#app{display:flex;flex-direction:column;height:100vh}
+header{padding:7px 16px;background:#161b22;border-bottom:1px solid #30363d;
+  display:flex;align-items:baseline;gap:10px}
+header .t{font-size:13px;font-weight:700}
+header .s{color:#8b949e;font-size:11px}
+header .live{color:#3fb950;font-size:10px;font-weight:600;margin-left:auto}
+header .live::before{content:"●";margin-right:3px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#main{flex:1;display:flex;overflow:hidden;min-height:0}
+#view3d{flex:1;position:relative;min-width:0}
+#c3d{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#c3d:active{cursor:grabbing}
+#hud{position:absolute;top:8px;left:10px;pointer-events:none;
+  font-family:"SF Mono",Monaco,monospace;font-size:11px;color:#8b949e;
+  line-height:1.6;text-shadow:0 0 4px #0d1117}
+#hud .v{color:#d2a8ff}#hud .lb{color:#6e7681}
+#hud .sat{color:#f85149}
+#hint{position:absolute;bottom:6px;left:10px;pointer-events:none;
+  font-size:10px;color:#484f58}
+#side{width:400px;min-width:400px;border-left:1px solid #30363d;
+  display:flex;flex-direction:column}
+.pnl{position:relative;border-bottom:1px solid #21262d}
+.pnl.plot{flex:1;min-height:0}
+.pnl.plot canvas{width:100%;height:calc(100% - 16px);display:block}
+.ph{font-size:10px;color:#8b949e;padding:3px 10px 0;display:flex;gap:10px;align-items:center}
+.lg{display:inline-flex;align-items:center;gap:3px;font-size:9px}
+.lg span{width:12px;height:0;border-top:2px solid}
+.lg.d span{border-top-style:dashed}
+#ctrl{padding:8px 10px;overflow-y:auto;max-height:340px}
+.sec{margin-bottom:8px}
+.sec-h{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#6e7681;
+  margin-bottom:4px;font-weight:600}
+.btn-row{display:flex;gap:3px;margin-bottom:6px}
+.btn{padding:4px 10px;background:#21262d;color:#c9d1d9;border:1px solid #30363d;
+  border-radius:5px;cursor:pointer;font-size:11px;font-weight:500;transition:all .12s;
+  user-select:none;flex:1;text-align:center}
+.btn:hover{background:#30363d;border-color:#8b949e}
+.btn.active{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.btn.warn{background:#da3633;border-color:#da3633;color:#fff}
+.btn.warn:hover{background:#f85149}
+.sld-row{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.sld-row label{font-size:11px;color:#8b949e;min-width:38px}
+.sld-row input[type=range]{flex:1;height:3px;-webkit-appearance:none;appearance:none;
+  background:#21262d;border-radius:2px;outline:none}
+.sld-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;
+  height:12px;background:#58a6ff;border-radius:50%;cursor:pointer}
+.sld-row input[type=range]::-moz-range-thumb{width:12px;height:12px;background:#58a6ff;
+  border:none;border-radius:50%;cursor:pointer}
+.sld-row input[type=range]:disabled{opacity:.35}
+.sld-row input[type=range]:disabled::-webkit-slider-thumb{cursor:default}
+.sld-row .val{font-family:"SF Mono",Monaco,monospace;font-size:10px;color:#58a6ff;
+  min-width:42px;text-align:right}
+.sld-row .val.sat{color:#f85149}
+select{background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:5px;
+  padding:3px 6px;font-size:11px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <span class="t">Quadrotor Attitude Simulator — LIVE</span>
+  <span class="s">Fresk &amp; Nikolakopoulos P&sup2; controller, eq. (17)-(21) · physics running in your browser</span>
+  <span class="live">SIMULATING</span>
+</header>
+<div id="main">
+  <div id="view3d">
+    <canvas id="c3d"></canvas>
+    <div id="hud"></div>
+    <div id="hint">drag to orbit camera · scroll to zoom · space = pause</div>
+  </div>
+  <div id="side">
+    <div class="pnl plot">
+      <div class="ph"><span>Attitude [rad]</span>
+        <span class="lg"><span style="border-color:#58a6ff"></span>&phi;</span>
+        <span class="lg"><span style="border-color:#f0883e"></span>&theta;</span>
+        <span class="lg"><span style="border-color:#bc8cff"></span>&psi;</span>
+        <span class="lg d"><span style="border-color:#6e7681"></span>ref</span>
+      </div><canvas id="c-ang"></canvas>
+    </div>
+    <div class="pnl plot">
+      <div class="ph"><span>Torque [N&middot;m] &mdash; bound &plusmn;<span id="tlbl">4.0</span></span></div>
+      <canvas id="c-tau"></canvas>
+    </div>
+    <div id="ctrl">
+      <div class="sec">
+        <div class="sec-h">Reference mode</div>
+        <div class="btn-row">
+          <button class="btn active" data-mode="manual">Manual</button>
+          <button class="btn" data-mode="step">Step</button>
+          <button class="btn" data-mode="sine">Sine</button>
+          <button class="btn" data-mode="flip">Flip</button>
+        </div>
+        <div class="sld-row"><label>&phi;_ref</label>
+          <input type="range" id="r-phi" min="-3.14" max="3.14" step="0.01" value="0">
+          <span class="val" id="v-phi">0.00</span></div>
+        <div class="sld-row"><label>&theta;_ref</label>
+          <input type="range" id="r-theta" min="-3.14" max="3.14" step="0.01" value="0">
+          <span class="val" id="v-theta">0.00</span></div>
+        <div class="sld-row"><label>&psi;_ref</label>
+          <input type="range" id="r-psi" min="-3.14" max="3.14" step="0.01" value="0">
+          <span class="val" id="v-psi">0.00</span></div>
+      </div>
+      <div class="sec">
+        <div class="sec-h">Controller gains (eq. 21)</div>
+        <div class="sld-row"><label>P<sub>q</sub></label>
+          <input type="range" id="r-pq" min="0" max="50" step="0.5" value="20">
+          <span class="val" id="v-pq">20.0</span></div>
+        <div class="sld-row"><label>P&omega;</label>
+          <input type="range" id="r-pw" min="0" max="20" step="0.1" value="4">
+          <span class="val" id="v-pw">4.0</span></div>
+      </div>
+      <div class="sec">
+        <div class="sec-h">Plant parameters</div>
+        <div class="sld-row"><label>noise</label>
+          <input type="range" id="r-noise" min="0" max="0.5" step="0.01" value="0.1">
+          <span class="val" id="v-noise">0.10</span></div>
+        <div class="sld-row"><label>&tau;_max</label>
+          <input type="range" id="r-tmax" min="0.5" max="10" step="0.1" value="4">
+          <span class="val" id="v-tmax">4.0</span></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn warn" id="reset">Reset Drone</button>
+        <select id="speed"><option value="0.5">0.5&times;</option>
+          <option value="1" selected>1&times; speed</option>
+          <option value="2">2&times;</option></select>
+      </div>
+    </div>
+  </div>
+</div></div>
+<script>"use strict";
+/* ==========================================================================
+   QUATERNION ALGEBRA — paper eq. (1)-(16), scalar-first [q0,q1,q2,q3]
+   ========================================================================== */
+function qmul(p,q){return[p[0]*q[0]-p[1]*q[1]-p[2]*q[2]-p[3]*q[3],
+  p[0]*q[1]+p[1]*q[0]+p[2]*q[3]-p[3]*q[2],
+  p[0]*q[2]-p[1]*q[3]+p[2]*q[0]+p[3]*q[1],
+  p[0]*q[3]+p[1]*q[2]-p[2]*q[1]+p[3]*q[0]]}
+function qconj(q){return[q[0],-q[1],-q[2],-q[3]]}
+function qnorm(q){return Math.hypot(q[0],q[1],q[2],q[3])}
+function qnormz(q){const n=Math.hypot(q[0],q[1],q[2],q[3]);return n<1e-12?[1,0,0,0]:[q[0]/n,q[1]/n,q[2]/n,q[3]/n]}
+/* eq.(9)-(12): quaternion -> DCM, R@v_body = v_world */
+function q2R(q){const q0=q[0],q1=q[1],q2=q[2],q3=q[3];
+  return[[q0*q0+q1*q1-q2*q2-q3*q3,2*(q1*q2-q0*q3),2*(q1*q3+q0*q2)],
+         [2*(q1*q2+q0*q3),q0*q0-q1*q1+q2*q2-q3*q3,2*(q2*q3-q0*q1)],
+         [2*(q1*q3-q0*q2),2*(q2*q3+q0*q1),q0*q0-q1*q1-q2*q2+q3*q3]]}
+function Rv(R,v){return[R[0][0]*v[0]+R[0][1]*v[1]+R[0][2]*v[2],
+  R[1][0]*v[0]+R[1][1]*v[1]+R[1][2]*v[2],R[2][0]*v[0]+R[2][1]*v[1]+R[2][2]*v[2]]}
+/* eq.(15): Euler(ZYX) -> quaternion */
+function euler2q(ph,th,ps){const a=ph/2,b=th/2,c=ps/2,
+  cp=Math.cos(a),sp=Math.sin(a),ct=Math.cos(b),st=Math.sin(b),ce=Math.cos(c),se=Math.sin(c);
+  return[cp*ct*ce+sp*st*se, sp*ct*ce-cp*st*se, cp*st*ce+sp*ct*se, cp*ct*se-sp*st*ce]}
+/* eq.(16): quaternion -> Euler */
+function q2euler(q){const q0=q[0],q1=q[1],q2=q[2],q3=q[3];
+  return[Math.atan2(2*(q0*q1+q2*q3),q0*q0-q1*q1-q2*q2+q3*q3),
+    Math.asin(Math.max(-1,Math.min(1,2*(q0*q2-q3*q1)))),
+    Math.atan2(2*(q0*q3+q1*q2),q0*q0+q1*q1-q2*q2-q3*q3)]}
+/* eq.(14): axis-angle -> quaternion */
+function axang2q(ax,ang){const n=Math.hypot(ax[0],ax[1],ax[2])||1,u=[ax[0]/n,ax[1]/n,ax[2]/n],
+  h=ang/2,s=Math.sin(h);return[Math.cos(h),u[0]*s,u[1]*s,u[2]*s]}
+
+/* ==========================================================================
+   PLANT DYNAMICS — paper eq. (18)
+     qdot   = -1/2 [0;w] (x) q          (minus sign: right-hand form of eq.7)
+     omegadot = I^-1 tau - I^-1 [w x (I w)]
+   ========================================================================== */
+const IXX=6.5e-4,IYY=6.5e-4,IZZ=1.2e-3; /* paper Section V CAD values */
+function deriv(s,tau){const q0=s[0],q1=s[1],q2=s[2],q3=s[3],wx=s[4],wy=s[5],wz=s[6];
+  /* qdot = -0.5 * [0,w] ⊗ q  (eq.18 minus sign). Uses verified qmul to avoid
+     transcription sign errors in the cross terms. */
+  const pd=qmul([0,wx,wy,wz],[q0,q1,q2,q3]);
+  const dq0=-0.5*pd[0],dq1=-0.5*pd[1],dq2=-0.5*pd[2],dq3=-0.5*pd[3];
+  /* omegadot = I^-1 (tau - w x (I w)) */
+  const Iwx=IXX*wx,Iwy=IYY*wy,Iwz=IZZ*wz;
+  return[dq0,dq1,dq2,dq3,
+    (tau[0]-(wy*Iwz-wz*Iwy))/IXX,
+    (tau[1]-(wz*Iwx-wx*Iwz))/IYY,
+    (tau[2]-(wx*Iwy-wy*Iwx))/IZZ]}
+/* Classic RK4 step, 7-state vector, torque ZOH-held */
+function rk4(s,tau,dt){const k1=deriv(s,tau);
+  const s2=[s[0]+.5*dt*k1[0],s[1]+.5*dt*k1[1],s[2]+.5*dt*k1[2],s[3]+.5*dt*k1[3],s[4]+.5*dt*k1[4],s[5]+.5*dt*k1[5],s[6]+.5*dt*k1[6]];
+  const k2=deriv(s2,tau);
+  const s3=[s[0]+.5*dt*k2[0],s[1]+.5*dt*k2[1],s[2]+.5*dt*k2[2],s[3]+.5*dt*k2[3],s[4]+.5*dt*k2[4],s[5]+.5*dt*k2[5],s[6]+.5*dt*k2[6]];
+  const k3=deriv(s3,tau);
+  const s4=[s[0]+dt*k3[0],s[1]+dt*k3[1],s[2]+dt*k3[2],s[3]+dt*k3[3],s[4]+dt*k3[4],s[5]+dt*k3[5],s[6]+dt*k3[6]];
+  const k4=deriv(s4,tau);
+  const h=dt/6;
+  return[s[0]+h*(k1[0]+2*k2[0]+2*k3[0]+k4[0]),s[1]+h*(k1[1]+2*k2[1]+2*k3[1]+k4[1]),
+    s[2]+h*(k1[2]+2*k2[2]+2*k3[2]+k4[2]),s[3]+h*(k1[3]+2*k2[3]+2*k3[3]+k4[3]),
+    s[4]+h*(k1[4]+2*k2[4]+2*k3[4]+k4[4]),s[5]+h*(k1[5]+2*k2[5]+2*k3[5]+k4[5]),
+    s[6]+h*(k1[6]+2*k2[6]+2*k3[6]+k4[6])]}
+
+/* ==========================================================================
+   CONTROLLER — paper eq. (19)-(21)
+   ========================================================================== */
+function ctrlTorque(qRef,qMeas,om,Pq,Pw,shortest){
+  const e=qmul(qRef,qconj(qMeas));           /* eq.19: qerr = qref ⊗ qm* */
+  let ax=[e[1],e[2],e[3]];                     /* eq.20: axis error */
+  if(shortest&&e[0]<0)ax=[-ax[0],-ax[1],-ax[2]]; /* eq.20: shortest path */
+  return[-Pq*ax[0]-Pw*om[0],-Pq*ax[1]-Pw*om[1],-Pq*ax[2]-Pw*om[2]]} /* eq.21 */
+
+/* ==========================================================================
+   SIMULATION STATE & PARAMETERS
+   ========================================================================== */
+let state=[1,0,0,0,0,0,0];   /* [q0,q1,q2,q3, wx,wy,wz] */
+let simT=0,paused=false;
+let lastTau=[0,0,0],lastQref=[1,0,0,0],lastSat=[false,false,false];
+let refMode="manual";
+let spin=0,yaw=-0.6,pitch=0.38,dist=0.95;
+
+const $=id=>document.getElementById(id);
+const param=()=>({Pq:+$("r-pq").value,Pw:+$("r-pw").value,
+  noise:+$("r-noise").value,tmax:+$("r-tmax").value,speed:+$("speed").value});
+
+/* ==========================================================================
+   REFERENCE GENERATION
+   ========================================================================== */
+function getRef(t){
+  if(refMode==="manual")
+    return euler2q(+$("r-phi").value,+$("r-theta").value,+$("r-psi").value);
+  if(refMode==="step")
+    return euler2q(t>=1?1:0,t>=5?1:0,t>=9?1:0);
+  if(refMode==="sine")
+    return euler2q(.5*Math.sin(t),.5*Math.sin(t),.5*Math.sin(t+Math.PI/2));
+  /* flip: ramp 0->2pi over 2s, then hold */
+  return axang2q([1,0,0],Math.min(t/2,1)*2*Math.PI);
+}
+const shortestFor=()=>refMode!=="flip";
+
+/* ==========================================================================
+   HISTORY BUFFER (rolling, ~20s at 60Hz)
+   ========================================================================== */
+const HMAX=1200;
+const H={t:[],ph:[],th:[],ps:[],phr:[],thr:[],psr:[],tx:[],ty:[],tz:[]};
+function logH(){
+  const e=q2euler([state[0],state[1],state[2],state[3]]);
+  const er=q2euler(lastQref);
+  const push=(a,v)=>{a.push(v);if(a.length>HMAX)a.shift()};
+  push(H.t,simT);push(H.ph,e[0]);push(H.th,e[1]);push(H.ps,e[2]);
+  push(H.phr,er[0]);push(H.thr,er[1]);push(H.psr,er[2]);
+  push(H.tx,lastTau[0]);push(H.ty,lastTau[1]);push(H.tz,lastTau[2]);
+}
+
+/* ==========================================================================
+   ONE PHYSICS SUBSTEP
+   ========================================================================== */
+function substep(dt){
+  const p=param();
+  const qRef=getRef(simT);lastQref=qRef;
+  /* sensor: add uniform noise eq.V */
+  const na=p.noise,r=()=>(Math.random()*2-1)*na;
+  const qM=qnormz([state[0]+r(),state[1]+r(),state[2]+r(),state[3]+r()]);
+  const om=[state[4]+r(),state[5]+r(),state[6]+r()];
+  /* controller eq.19-21 */
+  let tau=ctrlTorque(qRef,qM,om,p.Pq,p.Pw,shortestFor());
+  /* saturate */
+  lastSat=[Math.abs(tau[0])>p.tmax,Math.abs(tau[1])>p.tmax,Math.abs(tau[2])>p.tmax];
+  tau=tau.map(v=>Math.max(-p.tmax,Math.min(p.tmax,v)));lastTau=tau;
+  /* RK4 integrate plant */
+  state=rk4(state,tau,dt);
+  /* renormalize quaternion */
+  const qn=qnormz([state[0],state[1],state[2],state[3]]);
+  state[0]=qn[0];state[1]=qn[1];state[2]=qn[2];state[3]=qn[3];
+}
+
+/* ==========================================================================
+   CANVAS SETUP
+   ========================================================================== */
+const dpr=window.devicePixelRatio||1;
+function setup(id){const c=$(id),resize=()=>{const r=c.getBoundingClientRect();
+  c.width=Math.round(r.width*dpr);c.height=Math.round(r.height*dpr)};
+  resize();return{c,ctx:c.getContext("2d"),resize}}
+const V3=setup("c3d"),VA=setup("c-ang"),VT=setup("c-tau");
+window.addEventListener("resize",()=>{V3.resize();VA.resize();VT.resize()});
+
+/* ==========================================================================
+   3D CAMERA & PROJECTION
+   ========================================================================== */
+function camPos(){return[dist*Math.cos(pitch)*Math.sin(yaw),
+  dist*Math.cos(pitch)*Math.cos(yaw),dist*Math.sin(pitch)]}
+function camBas(){const cp=camPos(),f=[-cp[0]/dist,-cp[1]/dist,-cp[2]/dist],
+  r=vnorm(cross3(f,[0,0,1])),u=cross3(r,f);return{cp,f,r,u}}
+function dot3(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]}
+function cross3(a,b){return[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]}
+function vnorm(v){const n=Math.hypot(v[0],v[1],v[2]);return n<1e-12?[0,0,0]:[v[0]/n,v[1]/n,v[2]/n]}
+function proj(p,c,w,h){const rel=[p[0]-c.cp[0],p[1]-c.cp[1],p[2]-c.cp[2]];
+  const cf=dot3(c.f,rel);if(cf<0.01)return null;
+  const f=Math.min(w,h)*0.85;
+  return[w/2+f*dot3(c.r,rel)/cf,h/2-f*dot3(c.u,rel)/cf,cf]}
+function line3(cx,p1,p2,c,w,h,col,lw,dash){
+  const s1=proj(p1,c,w,h),s2=proj(p2,c,w,h);if(!s1||!s2)return;
+  const ds=Math.max(.35,Math.min(2.5,.75/((s1[2]+s2[2])/2)));
+  cx.strokeStyle=col;cx.lineWidth=lw*ds;cx.setLineDash(dash||[]);
+  cx.beginPath();cx.moveTo(s1[0],s1[1]);cx.lineTo(s2[0],s2[1]);cx.stroke();cx.setLineDash([])}
+/* draw a text label at a 3D point's projected screen position */
+function label3(cx,p,c,w,h,text,col,bold){
+  const s=proj(p,c,w,h);if(!s)return;
+  cx.fillStyle=col;cx.font=(bold?"bold ":"")+(12*dpr)+"px sans-serif";
+  cx.textAlign="center";cx.textBaseline="middle";
+  cx.fillText(text,s[0],s[1])}
+
+/* ==========================================================================
+   3D SCENE RENDERING
+   ========================================================================== */
+const ARM=0.15,RR=0.058,AL=0.22;
+const TIPS=[[ARM,ARM,0],[-ARM,-ARM,0],[ARM,-ARM,0],[-ARM,ARM,0]];
+function drawGrid(cx,c,w,h){const S=.32,st=.08,z=-.09;cx.lineWidth=.5*dpr;
+  for(let i=-S;i<=S+1e-9;i+=st){
+    let a=proj([-S,i,z],c,w,h),b=proj([S,i,z],c,w,h);
+    if(a&&b){cx.strokeStyle="rgba(40,46,55,.7)";cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.stroke()}
+    a=proj([i,-S,z],c,w,h),b=proj([i,S,z],c,w,h);
+    if(a&&b){cx.strokeStyle="rgba(40,46,55,.7)";cx.beginPath();cx.moveTo(a[0],a[1]);cx.lineTo(b[0],b[1]);cx.stroke()}}}
+function drawWAxes(cx,c,w,h){const L=.26;
+  line3(cx,[0,0,0],[L,0,0],c,w,h,"rgba(255,69,58,.25)",1.5,[3,3]);
+  line3(cx,[0,0,0],[0,L,0],c,w,h,"rgba(50,215,75,.25)",1.5,[3,3]);
+  line3(cx,[0,0,0],[0,0,L],c,w,h,"rgba(10,132,255,.25)",1.5,[3,3]);
+  label3(cx,[L*1.14,0,0],c,w,h,"X","rgba(255,69,58,.45)");
+  label3(cx,[0,L*1.14,0],c,w,h,"Y","rgba(50,215,75,.45)");
+  label3(cx,[0,0,L*1.14],c,w,h,"Z","rgba(10,132,255,.45)")}
+function drawRotor(cx,tb,R,c,w,h,idx){const cw=Rv(R,tb),N=18;
+  cx.strokeStyle="rgba(120,130,150,.5)";cx.lineWidth=1.2*dpr;cx.beginPath();
+  for(let i=0;i<=N;i++){const a=2*Math.PI*i/N,
+    s=proj(Rv(R,[tb[0]+RR*Math.cos(a),tb[1]+RR*Math.sin(a),tb[2]]),c,w,h);
+    if(!s)continue;if(i===0)cx.moveTo(s[0],s[1]);else cx.lineTo(s[0],s[1])}
+  cx.stroke();
+  const cs=proj(cw,c,w,h);if(cs){cx.fillStyle="#30363d";cx.beginPath();cx.arc(cs[0],cs[1],3*dpr,0,7);cx.fill()}
+  const dir=idx<2?1:-1,ba=spin*dir;
+  for(let b=0;b<2;b++){const a2=ba+b*Math.PI;
+    line3(cx,cw,Rv(R,[tb[0]+RR*Math.cos(a2),tb[1]+RR*Math.sin(a2),tb[2]]),c,w,h,"rgba(190,200,220,.55)",1.5)}}
+function drawDrone(cx,R,c,w,h){const tw=TIPS.map(t=>Rv(R,t));
+  line3(cx,tw[0],tw[1],c,w,h,"#00d4ff",5.5);
+  line3(cx,tw[2],tw[3],c,w,h,"#ff9500",5.5);
+  const o=Rv(R,[0,0,0]);
+  line3(cx,o,Rv(R,[AL,0,0]),c,w,h,"#ff453a",2.5);
+  line3(cx,o,Rv(R,[0,AL,0]),c,w,h,"#32d74b",2.5);
+  line3(cx,o,Rv(R,[0,0,AL]),c,w,h,"#0a84ff",2.5);
+  label3(cx,Rv(R,[AL*1.18,0,0]),c,w,h,"X","#ff453a",true);
+  label3(cx,Rv(R,[0,AL*1.18,0]),c,w,h,"Y","#32d74b",true);
+  label3(cx,Rv(R,[0,0,AL*1.18]),c,w,h,"Z","#0a84ff",true);
+  for(let i=0;i<4;i++)drawRotor(cx,TIPS[i],R,c,w,h,i);
+  const cs=proj(o,c,w,h);
+  if(cs){cx.fillStyle="#1f2937";cx.strokeStyle="#58a6ff";cx.lineWidth=1.5*dpr;
+    cx.beginPath();cx.arc(cs[0],cs[1],5*dpr,0,7);cx.fill();cx.stroke()}}
+function render3D(){const cx=V3.ctx,w=V3.c.width,h=V3.c.height;
+  cx.fillStyle="#0d1117";cx.fillRect(0,0,w,h);
+  const R=q2R([state[0],state[1],state[2],state[3]]),c=camBas();
+  drawGrid(cx,c,w,h);drawWAxes(cx,c,w,h);drawDrone(cx,R,c,w,h);
+  const e=q2euler([state[0],state[1],state[2],state[3]]);
+  const fi=Math.max(0,H.ph.length-1);
+  const sat=lastSat.some(x=>x);
+  $("hud").innerHTML=
+    '<span class="lb">mode</span> <span class="v">'+refMode.toUpperCase()+'</span>'+
+    '<span class="lb">  t</span>=<span class="v">'+simT.toFixed(2)+'s</span><br>'+
+    '<span class="lb">q</span>=[<span class="v">'+[state[0],state[1],state[2],state[3]].map(v=>v.toFixed(3)).join(", ")+'</span>]<br>'+
+    '<span class="lb">&phi;</span>=<span style="color:#58a6ff">'+e[0].toFixed(3)+'</span>'+
+    ' <span class="lb">&theta;</span>=<span style="color:#f0883e">'+e[1].toFixed(3)+'</span>'+
+    ' <span class="lb">&psi;</span>=<span style="color:#bc8cff">'+e[2].toFixed(3)+'</span>'+
+    (sat?'<br><span class="sat">&#9888; TORQUE SATURATING</span>':'');
+}
+
+/* ==========================================================================
+   2D PLOTS (rolling history)
+   ========================================================================== */
+function plot(cx,cw,ch,times,series,cfg){
+  if(times.length<2)return;
+  const pL=32*dpr,pR=8*dpr,pT=4*dpr,pB=14*dpr,pw=cw-pL-pR,ph=ch-pT-pB;
+  const tMin=times[0],tMax=times[times.length-1],tR=Math.max(.1,tMax-tMin);
+  const X=t=>pL+((t-tMin)/tR)*pw,Y=v=>pT+ph-((v-cfg.yMin)/(cfg.yMax-cfg.yMin))*ph;
+  cx.lineWidth=.5*dpr;cx.font=(9*dpr)+"px monospace";
+  for(let v=Math.ceil(cfg.yMin/cfg.step)*cfg.step;v<=cfg.yMax;v+=cfg.step){
+    cx.strokeStyle=v===0?"#30363d":"rgba(33,38,45,.8)";
+    cx.beginPath();cx.moveTo(pL,Y(v));cx.lineTo(cw-pR,Y(v));cx.stroke();
+    if(v!==0&&v%cfg.lbl===0){cx.fillStyle="#484f58";cx.textAlign="right";
+      cx.fillText(v.toFixed(0),pL-3*dpr,Y(v)+3*dpr)}}
+  if(cfg.bounds){cx.strokeStyle="rgba(218,54,51,.5)";cx.setLineDash([4*dpr,3*dpr]);cx.lineWidth=1*dpr;
+    for(const b of cfg.bounds){cx.beginPath();cx.moveTo(pL,Y(b));cx.lineTo(cw-pR,Y(b));cx.stroke()}
+    cx.setLineDash([])}
+  for(const s of series){cx.strokeStyle=s.c;cx.lineWidth=1.5*dpr;cx.setLineDash(s.dsh?[4*dpr,3*dpr]:[]);
+    cx.beginPath();for(let i=0;i<s.d.length;i++){const px=X(times[i]),py=Y(s.d[i]);
+      if(i===0)cx.moveTo(px,py);else cx.lineTo(px,py)}cx.stroke();cx.setLineDash([])}
+  /* cursor at current time */
+  cx.strokeStyle="rgba(88,166,255,.7)";cx.lineWidth=1*dpr;
+  cx.beginPath();cx.moveTo(X(tMax),pT);cx.lineTo(X(tMax),pT+ph);cx.stroke();
+}
+function renderAng(){const cx=VA.ctx,w=VA.c.width,h=VA.c.height;cx.clearRect(0,0,w,h);
+  const subH=h/3,labs=["\u03c6","\u03b8","\u03c8"];
+  const outs=[H.ph,H.th,H.ps],refs=[H.phr,H.thr,H.psr],cols=["#58a6ff","#f0883e","#bc8cff"];
+  const yr=refMode==="flip"?{yMin:-3.5,yMax:3.5,step:1,lbl:2}:{yMin:-1.5,yMax:1.5,step:.5,lbl:1};
+  for(let i=0;i<3;i++){cx.save();cx.translate(0,i*subH);
+    plot(cx,w,subH,H.t,[{d:refs[i],c:cols[i]+"70",dsh:true},{d:outs[i],c:cols[i]}],yr);
+    cx.restore();cx.fillStyle=cols[i];cx.font="bold 10px sans-serif";cx.textAlign="left";
+    cx.fillText(labs[i],36*dpr,i*subH+12*dpr)}}
+function renderTau(){const cx=VT.ctx,w=VT.c.width,h=VT.c.height;cx.clearRect(0,0,w,h);
+  const tm=+$("r-tmax").value,subH=h/3,labs=["Mx","My","Mz"];
+  const outs=[H.tx,H.ty,H.tz],cols=["#58a6ff","#f0883e","#bc8cff"];
+  for(let i=0;i<3;i++){cx.save();cx.translate(0,i*subH);
+    plot(cx,w,subH,H.t,[{d:outs[i],c:cols[i]}],{yMin:-tm*1.25,yMax:tm*1.25,step:tm/2,lbl:tm,bounds:[-tm,tm]});
+    cx.restore();cx.fillStyle=cols[i];cx.font="bold 10px sans-serif";cx.textAlign="left";
+    cx.fillText(labs[i],36*dpr,i*subH+12*dpr)}}
+
+/* ==========================================================================
+   ANIMATION LOOP
+   ========================================================================== */
+let lastTS=0;
+function loop(ts){
+  if(!lastTS)lastTS=ts;
+  let dt=(ts-lastTS)/1000;lastTS=ts;
+  if(dt>0.1)dt=0.1; /* clamp after tab-switch */
+  if(!paused){
+    const p=param();
+    const dtFrame=dt*p.speed;
+    /* adaptive substepping: keep |fast_eigenvalue * dt_sub| <= 0.5 for RK4 stability */
+    const Imin=Math.min(IXX,IYY,IZZ);
+    const fastEv=Math.max(p.Pw/Imin,Math.sqrt(p.Pq/(2*Imin)));
+    let nSub=Math.max(1,Math.ceil(fastEv*dtFrame/0.5));
+    nSub=Math.min(nSub,3000); /* cap for extreme gains */
+    const dtSub=dtFrame/nSub;
+    for(let i=0;i<nSub;i++){substep(dtSub);simT+=dtSub}
+    logH();
+  }
+  spin+=dt*40;
+  render3D();renderAng();renderTau();
+  /* update reference slider readouts in preset mode */
+  if(refMode!=="manual"){const er=q2euler(lastQref);
+    $("r-phi").value=er[0].toFixed(2);$("r-theta").value=er[1].toFixed(2);$("r-psi").value=er[2].toFixed(2)}
+  /* update slider value labels */
+  $("v-phi").textContent=(+$("r-phi").value).toFixed(2);
+  $("v-theta").textContent=(+$("r-theta").value).toFixed(2);
+  $("v-psi").textContent=(+$("r-psi").value).toFixed(2);
+  $("v-pq").textContent=(+$("r-pq").value).toFixed(1);
+  $("v-pw").textContent=(+$("r-pw").value).toFixed(1);
+  $("v-noise").textContent=(+$("r-noise").value).toFixed(2);
+  const tm=+$("r-tmax").value;$("v-tmax").textContent=tm.toFixed(1);
+  $("tlbl").textContent=tm.toFixed(1);
+  /* highlight saturating torque value */
+  $("v-tmax").className="val"+(lastSat.some(x=>x)?" sat":"");
+  requestAnimationFrame(loop);
+}
+
+/* ==========================================================================
+   UI EVENTS
+   ========================================================================== */
+function setMode(m){
+  refMode=m;
+  document.querySelectorAll("[data-mode]").forEach(b=>b.classList.toggle("active",b.dataset.mode===m));
+  const manual=m==="manual";
+  ["r-phi","r-theta","r-psi"].forEach(id=>$(id).disabled=!manual);
+  if(m!=="manual"){simT=0;resetState()} /* restart scenario */
+}
+function resetState(){state=[1,0,0,0,0,0,0];simT=0;
+  Object.keys(H).forEach(k=>H[k].length=0);lastTau=[0,0,0];lastQref=[1,0,0,0]}
+document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
+$("reset").addEventListener("click",resetState);
+["r-pq","r-pw","r-noise","r-tmax"].forEach(id=>$(id).addEventListener("input",()=>{}));
+/* camera orbit */
+const cv=V3.c;let drag=false,lx=0,ly=0;
+cv.addEventListener("pointerdown",e=>{drag=true;lx=e.clientX;ly=e.clientY;cv.setPointerCapture(e.pointerId)});
+cv.addEventListener("pointermove",e=>{if(!drag)return;
+  yaw-=(e.clientX-lx)*.008;pitch=Math.max(-.05,Math.min(1.4,pitch+(e.clientY-ly)*.008));
+  lx=e.clientX;ly=e.clientY});
+cv.addEventListener("pointerup",()=>drag=false);
+cv.addEventListener("pointercancel",()=>drag=false);
+cv.addEventListener("wheel",e=>{e.preventDefault();dist*=e.deltaY>0?1.1:.9;
+  dist=Math.max(.35,Math.min(4,dist))},{passive:false});
+/* keyboard */
+window.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT")return;
+  if(e.code==="Space"){e.preventDefault();paused=!paused}
+  if(e.key==="r")resetState();
+  if(e.key==="1")setMode("manual");
+  if(e.key==="2")setMode("step");
+  if(e.key==="3")setMode("sine");
+  if(e.key==="4")setMode("flip");
+});
+requestAnimationFrame(loop);
+</script>
+</body></html>
