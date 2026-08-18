@@ -60,6 +60,13 @@ def _snapshot(sim: Simulation) -> dict:
 def _make_handler(sim: Simulation):
     class Handler(BaseHTTPRequestHandler):
         server_version = "pysitl-gcs/0.1"
+        # BaseHTTPRequestHandler defaults to HTTP/1.0, which opens a fresh TCP
+        # connection per request -- brutal here, since the stick loop alone
+        # posts 25x/sec continuously. HTTP/1.1 (with the Content-Length
+        # headers already sent below) lets the browser keep one connection
+        # alive, so a button click doesn't queue behind a backlog of stick
+        # POSTs each paying a full connection setup.
+        protocol_version = "HTTP/1.1"
 
         def log_message(self, fmt, *args):  # quiet: default logs every request to stderr
             pass

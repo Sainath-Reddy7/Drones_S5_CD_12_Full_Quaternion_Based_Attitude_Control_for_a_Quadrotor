@@ -428,6 +428,7 @@ window.addEventListener("keyup", e=>{ keys.delete(e.key.toLowerCase()); });
 
 let throttle = 0.5;
 let stickState = {roll:0, pitch:0, yaw_rate:0, throttle:0.5};
+let lastPostedStick = null;
 
 function updateSticks(){
   const roll = (keys.has("d")?1:0) - (keys.has("a")?1:0);
@@ -443,7 +444,16 @@ function updateSticks(){
   $("stickR").style.transform = `translate(${roll*22-4}px, ${-pitch*22-4}px)`;
   $("stickL").style.transform = `translate(${yaw*22-4}px, ${(0.5-throttle)*44-4}px)`;
 
-  post("/stick", stickState);
+  // Only hit the network when something actually changed -- posting 25x/sec
+  // unconditionally (even while idle) competes with button-click requests
+  // for the browser's small per-origin connection pool, making buttons feel
+  // sluggish. Throttle changes constantly while a key is held, so this still
+  // posts at full rate during real input; it just stops spamming at idle.
+  const key = JSON.stringify(stickState);
+  if (key !== lastPostedStick) {
+    lastPostedStick = key;
+    post("/stick", stickState);
+  }
 }
 setInterval(updateSticks, 1000/25);
 
