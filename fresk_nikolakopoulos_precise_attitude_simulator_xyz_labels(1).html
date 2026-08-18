@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fresk–Nikolakopoulos Quaternion Attitude Controller — Precise Browser Simulator</title>
+<style>
+:root{--bg:#0b0f14;--panel:#111821;--line:#293341;--text:#d7dde5;--muted:#8994a3;--blue:#58a6ff;--orange:#f0883e;--purple:#bc8cff;--green:#3fb950;--red:#f85149}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}body{overflow:hidden}
+#app{height:100vh;display:flex;flex-direction:column}header{height:52px;display:flex;align-items:center;gap:12px;padding:0 14px;background:#0f141b;border-bottom:1px solid var(--line)}
+.title{font-weight:700;font-size:13px}.sub{font-size:11px;color:var(--muted)}.live{margin-left:auto;color:var(--green);font-size:10px;font-weight:700}.live:before{content:"●";margin-right:5px}
+#main{min-height:0;flex:1;display:grid;grid-template-columns:minmax(0,1fr) 430px}.view{position:relative;min-width:0}.view canvas{display:block;width:100%;height:100%;cursor:grab}.view canvas:active{cursor:grabbing}.hud{position:absolute;left:12px;top:12px;font:11px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);pointer-events:none;text-shadow:0 1px 3px #000}.hud b{color:var(--text)}
+.side{border-left:1px solid var(--line);background:#0e141b;display:flex;flex-direction:column;min-width:0;overflow:hidden}.chart{height:31%;min-height:190px;border-bottom:1px solid var(--line);position:relative}.chart:last-of-type{height:29%}.chart h3{font-size:10px;font-weight:600;color:var(--muted);margin:0;padding:5px 10px}.chart canvas{width:100%;height:calc(100% - 21px);display:block}
+.controls{padding:9px 10px;overflow:auto}.section{padding-bottom:9px;margin-bottom:9px;border-bottom:1px solid #1d2630}.section h4{margin:0 0 6px;font-size:9px;color:#6f7b89;text-transform:uppercase;letter-spacing:.7px}.row{display:flex;align-items:center;gap:7px;margin:4px 0}.row label{width:77px;font-size:11px;color:#9aa5b3}.row input[type=range]{flex:1}.row output{width:52px;text-align:right;font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--blue)}.row input[type=number],.row select{width:100px;background:#1b2430;color:var(--text);border:1px solid #324052;border-radius:4px;padding:4px 6px;font-size:11px}
+.buttons{display:flex;gap:5px;flex-wrap:wrap}.btn{flex:1;min-width:72px;background:#1b2430;color:var(--text);border:1px solid #324052;border-radius:5px;padding:6px 8px;font-size:11px;cursor:pointer}.btn:hover{background:#253141}.btn.active{background:#1f6feb;border-color:#1f6feb;color:#fff}.btn.warn{background:#6e2328;border-color:#a9323a}.btn.small{flex:0 0 auto}
+.note{font-size:9px;line-height:1.45;color:#738092;margin-top:6px}.eq{font:10px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:#aab5c3;background:#0b1016;border:1px solid #202a35;border-radius:4px;padding:6px 7px;margin-top:5px;white-space:pre-wrap}.ok{color:var(--green)}.warn{color:#f0b74a}.danger{color:var(--red)}
+.badge{display:inline-block;padding:2px 5px;border:1px solid #33404f;border-radius:4px;font-size:8px;color:#a8b2bf}.footer{font-size:8px;color:#647183;padding:4px 8px;border-top:1px solid var(--line);background:#0b1118}
+:is(button,input,select,a):focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+@media (max-width:860px){
+  body{overflow:auto}
+  #main{grid-template-columns:1fr;height:auto}
+  .view{aspect-ratio:1/1;min-height:280px}
+  .side{border-left:none;border-top:1px solid var(--line)}
+  .chart{height:220px;min-height:220px}
+  #app{height:auto;min-height:100vh}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <div class="title">Quaternion Attitude Simulator — Fresk &amp; Nikolakopoulos P² Controller</div>
+  <div class="sub">Eq. (1)–(21) implemented in quaternion coordinates; attitude-only browser model</div>
+  <div class="live">LIVE</div>
+</header>
+<div id="main">
+  <div class="view"><canvas id="scene"></canvas><div id="hud" class="hud"></div></div>
+  <div class="side">
+    <section class="chart"><h3>Attitude [rad] — dashed: reference, solid: response</h3><canvas id="ang"></canvas></section>
+    <section class="chart"><h3>Torque [N·m] — saturation ±<span id="tmaxLabel">4.0</span></h3><canvas id="tau"></canvas></section>
+    <section class="controls">
+      <div class="section">
+        <h4>Benchmark / reference</h4>
+        <div class="buttons">
+          <button class="btn active" data-mode="step">Step</button>
+          <button class="btn" data-mode="sine">Sine</button>
+          <button class="btn" data-mode="flip">Flip</button>
+          <button class="btn" data-mode="manual">Manual</button>
+        </div>
+        <div class="note">Paper test cases: step, 0.5-rad / 1-rad/s sine, and 360° flip. The paper does not publish exact y/z sine phase offsets; the sine defaults below are figure-aligned approximations and are editable.</div>
+      </div>
+
+      <div class="section">
+        <h4>Manual reference [rad]</h4>
+        <div class="row"><label>φ<sub>ref</sub></label><input id="phi" type="range" min="-3.14159" max="3.14159" step="0.001" value="0"><output id="phiV">0.000</output></div>
+        <div class="row"><label>θ<sub>ref</sub></label><input id="theta" type="range" min="-3.14159" max="3.14159" step="0.001" value="0"><output id="thetaV">0.000</output></div>
+        <div class="row"><label>ψ<sub>ref</sub></label><input id="psi" type="range" min="-3.14159" max="3.14159" step="0.001" value="0"><output id="psiV">0.000</output></div>
+      </div>
+
+      <div class="section">
+        <h4>Controller — paper Eq. (21)</h4>
+        <div class="row"><label>P<sub>q</sub></label><input id="Pq" type="range" min="0" max="50" step="0.1" value="20"><output id="PqV">20.0</output></div>
+        <div class="row"><label>P<sub>ω</sub></label><input id="Pw" type="range" min="0" max="20" step="0.1" value="4"><output id="PwV">4.0</output></div>
+        <div class="row"><label>τ<sub>max</sub> [N·m]</label><input id="tmax" type="range" min="0.5" max="10" step="0.05" value="4"><output id="tmaxV">4.00</output></div>
+        <div class="eq">qerr = qref ⊗ qm*\nAxiserr = [qerr1, qerr2, qerr3]ᵀ\nτ = −Pq·Axiserr − Pω·ωm</div>
+        <div class="note">P<sub>ω</sub> sets a fast real closed-loop pole at ≈P<sub>ω</sub>/I<sub>min</sub>. A fixed integration step safe for the paper's default (P<sub>ω</sub>=4) is too coarse once you raise the slider — the loop would chatter, the same failure mode a too-slow digital control tick has on real hardware. The physics step is recomputed from P<sub>ω</sub> every frame instead; watch the HUD's <b>CTRL / dt</b> readout react as you drag.</div>
+      </div>
+
+      <div class="section">
+        <h4>Plant / measurement model</h4>
+        <div class="row"><label>noise amplitude</label><input id="noise" type="range" min="0" max="0.5" step="0.001" value="0.1"><output id="noiseV">0.100</output></div>
+        <div class="row"><label>integration speed</label><select id="speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></div>
+        <div class="row"><label>noise seed</label><input id="seed" type="number" value="2013" step="1"><button id="reseed" class="btn small">Apply</button></div>
+        <div class="eq">Ixx = Iyy = 6.5×10⁻⁴ kg·m²\nIzz = 1.2×10⁻³ kg·m²\nq̇ = −½ [0,ω] ⊗ q\nω̇ = I⁻¹(τ − ω×(Iω))</div>
+        <div class="note">The paper states zero-mean noise of amplitude 0.1, but does not specify a distribution or seed. This simulator uses a bounded zero-mean uniform realization for reproducibility. The paper's published simulations use a richer nonlinear quadrotor model; the supplied article does not give enough equations to reconstruct that model exactly, so this file deliberately implements the explicitly stated Eq. (18) attitude dynamics rather than inventing missing aerodynamic terms.</div>
+      </div>
+
+      <div class="section">
+        <h4>Sine phase offsets [rad]</h4>
+        <div class="row"><label>φ phase</label><input id="ph0" type="number" value="0" step="0.01"><output>0.00</output></div>
+        <div class="row"><label>θ phase</label><input id="ph1" type="number" value="0.65" step="0.01"><output>0.65</output></div>
+        <div class="row"><label>ψ phase</label><input id="ph2" type="number" value="1.30" step="0.01"><output>1.30</output></div>
+      </div>
+
+      <div class="section">
+        <h4>Run controls</h4>
+        <div class="buttons"><button id="reset" class="btn warn">Reset</button><button id="pause" class="btn">Pause</button><button id="csv" class="btn">Export CSV</button></div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:#9aa5b3;margin-top:7px"><input id="autoLoop" type="checkbox" checked> Auto-loop benchmark when it reaches the end</label>
+        <div class="note"><span class="badge">STEP 15 s</span> <span class="badge">SINE 15 s</span> <span class="badge">FLIP 5 s</span> The adaptive-step integrator and a per-frame substep budget prevent the browser from entering a catch-up spiral after a temporary frame drop.</div>
+      </div>
+
+      <div class="section">
+        <h4>Equation audit</h4>
+        <div id="audit" class="note"></div>
+      </div>
+    </section>
+    <div class="footer">Source: Emil Fresk &amp; George Nikolakopoulos, “Full Quaternion Based Attitude Control for a Quadrotor,” European Control Conference, 2013. This browser implementation is intentionally transparent about what is and is not specified by the supplied paper.</div>
+  </div>
+</div>
+</div>
+<script>
+"use strict";
+
+/* ========================== Quaternion algebra ========================== */
+function qmul(p,q){return[
+  p[0]*q[0]-p[1]*q[1]-p[2]*q[2]-p[3]*q[3],
+  p[0]*q[1]+p[1]*q[0]+p[2]*q[3]-p[3]*q[2],
+  p[0]*q[2]-p[1]*q[3]+p[2]*q[0]+p[3]*q[1],
+  p[0]*q[3]+p[1]*q[2]-p[2]*q[1]+p[3]*q[0]
+]}
+function qconj(q){return[q[0],-q[1],-q[2],-q[3]]}
+function qnorm(q){return Math.hypot(q[0],q[1],q[2],q[3])}
+function qnormz(q){const n=qnorm(q);return n<1e-15?[1,0,0,0]:q.map(v=>v/n)}
+function qinv(q){const n2=q[0]*q[0]+q[1]*q[1]+q[2]*q[2]+q[3]*q[3];if(n2<1e-15)return[1,0,0,0];return qconj(q).map(v=>v/n2)}
+
+/* Paper Eqs. (9)-(13): active DCM, R(q) v */
+function q2R(q){const[q0,q1,q2,q3]=q;return[
+  [q0*q0+q1*q1-q2*q2-q3*q3, 2*(q1*q2-q0*q3), 2*(q1*q3+q0*q2)],
+  [2*(q1*q2+q0*q3), q0*q0-q1*q1+q2*q2-q3*q3, 2*(q2*q3-q0*q1)],
+  [2*(q1*q3-q0*q2), 2*(q2*q3+q0*q1), q0*q0-q1*q1-q2*q2+q3*q3]
+]}
+function Rv(R,v){return[
+ R[0][0]*v[0]+R[0][1]*v[1]+R[0][2]*v[2],
+ R[1][0]*v[0]+R[1][1]*v[1]+R[1][2]*v[2],
+ R[2][0]*v[0]+R[2][1]*v[1]+R[2][2]*v[2]
+]}
+
+/* Paper Eq. (14) */
+function axang2q(axis,ang){const n=Math.hypot(axis[0],axis[1],axis[2])||1;const u=axis.map(v=>v/n),h=ang/2,s=Math.sin(h);return[Math.cos(h),u[0]*s,u[1]*s,u[2]*s]}
+
+/* Paper Eqs. (15)-(16), ZYX convention */
+function euler2q(ph,th,ps){const a=ph/2,b=th/2,c=ps/2,cp=Math.cos(a),sp=Math.sin(a),ct=Math.cos(b),st=Math.sin(b),cy=Math.cos(c),sy=Math.sin(c);return[
+ cp*ct*cy+sp*st*sy,
+ sp*ct*cy-cp*st*sy,
+ cp*st*cy+sp*ct*sy,
+ cp*ct*sy-sp*st*cy
+]}
+function q2euler(q){const[q0,q1,q2,q3]=q;return[
+ Math.atan2(2*(q0*q1+q2*q3),q0*q0-q1*q1-q2*q2+q3*q3),
+ Math.asin(Math.max(-1,Math.min(1,2*(q0*q2-q3*q1)))),
+ Math.atan2(2*(q0*q3+q1*q2),q0*q0+q1*q1-q2*q2-q3*q3)
+]}
+
+/* ========================== Paper Eq. (18) ========================== */
+const IXX=6.5e-4,IYY=6.5e-4,IZZ=1.2e-3;
+/* The rate-feedback term -Pw*omega and the plant's inertia set a fast real
+   closed-loop pole at magnitude ~Pw/Imin. A FIXED integration step that is safe
+   for the default Pw=4 (paper's tuned value) is provably too coarse once Pw is
+   raised via the slider: explicit RK4 needs |pole*dt| below its stability bound,
+   so a fixed dt would make the loop chatter/diverge exactly the way a too-slow
+   digital control-tick rate does on real hardware. This recomputes a stable dt
+   from the CURRENT gain every frame instead of hardcoding one. */
+function stableDt(Pw,margin){
+  const Imin=Math.min(IXX,IYY,IZZ);
+  const fast=Math.max(Pw,0.05)/Imin;
+  return (margin||0.5)/fast;
+}
+function deriv(s,tau){
+ const q=s.slice(0,4),wx=s[4],wy=s[5],wz=s[6];
+ const pd=qmul([0,wx,wy,wz],q);
+ const iwx=IXX*wx,iwy=IYY*wy,iwz=IZZ*wz;
+ const cx=wy*iwz-wz*iwy,cy=wz*iwx-wx*iwz,cz=wx*iwy-wy*iwx;
+ return[-0.5*pd[0],-0.5*pd[1],-0.5*pd[2],-0.5*pd[3],
+   (tau[0]-cx)/IXX,(tau[1]-cy)/IYY,(tau[2]-cz)/IZZ];
+}
+function rk4(s,tau,dt){
+ const k1=deriv(s,tau),s2=s.map((v,i)=>v+dt*k1[i]/2),k2=deriv(s2,tau),s3=s.map((v,i)=>v+dt*k2[i]/2),k3=deriv(s3,tau),s4=s.map((v,i)=>v+dt*k3[i]),k4=deriv(s4,tau);
+ return s.map((v,i)=>v+dt*(k1[i]+2*k2[i]+2*k3[i]+k4[i])/6);
+}
+
+/* ========================== Controller Eqs. (19)-(21) ========================== */
+function torque(qref,qm,om,Pq,Pw,shortest){
+ const qerr=qmul(qref,qconj(qm));let a=[qerr[1],qerr[2],qerr[3]];
+ if(shortest&&qerr[0]<0)a=a.map(v=>-v);
+ return[-Pq*a[0]-Pw*om[0],-Pq*a[1]-Pw*om[1],-Pq*a[2]-Pw*om[2]];
+}
+
+/* ========================== Deterministic bounded zero-mean noise ========================== */
+let rngState=2013;
+function seedRng(x){rngState=(x>>>0)||2013}
+function rng(){let t=rngState+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}
+function noise(a){return(2*rng()-1)*a}
+
+/* ========================== Simulation state ========================== */
+const $=id=>document.getElementById(id);
+const ui={
+ Pq:$('Pq'),Pw:$('Pw'),noise:$('noise'),tmax:$('tmax'),speed:$('speed'),seed:$('seed'),
+ phi:$('phi'),theta:$('theta'),psi:$('psi'),ph0:$('ph0'),ph1:$('ph1'),ph2:$('ph2')
+};
+let mode='step',state=[1,0,0,0,0,0,0],simT=0,paused=false,lastTs=0,stopAt=15;
+let lastTau=[0,0,0],lastQref=[1,0,0,0],sat=[false,false,false];
+const HMAX=1200,H={t:[],ph:[],th:[],ps:[],rph:[],rth:[],rps:[],tx:[],ty:[],tz:[],q0:[],q1:[],q2:[],q3:[]};
+function clearHistory(){for(const k of Object.keys(H))H[k].length=0}
+function reset(){state=[1,0,0,0,0,0,0];simT=0;accumulator=0;lastTau=[0,0,0];lastQref=[1,0,0,0];sat=[false,false,false];clearHistory();lastTs=0;seedRng(Number(ui.seed.value)||2013);paused=false;$('pause').textContent='Pause';if(typeof controlLimiter!=='undefined'){controlLimiter.Pq.value=Number(ui.Pq.value);controlLimiter.Pw.value=Number(ui.Pw.value);controlLimiter.noise.value=Number(ui.noise.value);controlLimiter.tmax.value=Number(ui.tmax.value)}}
+
+function getRef(t){
+ if(mode==='manual')return euler2q(Number(ui.phi.value),Number(ui.theta.value),Number(ui.psi.value));
+ if(mode==='step'){
+   /* Times follow the visible step transitions of Fig. 3; the paper states only "different time instances" in text. */
+   return euler2q(t>=1?1:0,t>=5?1:0,t>=9?1:0);
+ }
+ if(mode==='sine'){
+   return euler2q(.5*Math.sin(t+Number(ui.ph0.value)),.5*Math.sin(t+Number(ui.ph1.value)),.5*Math.sin(t+Number(ui.ph2.value)));
+ }
+ return axang2q([1,0,0],Math.min(t/2,1)*2*Math.PI);
+}
+function useShortest(){return mode!=='flip'}
+function log(){const e=q2euler(state.slice(0,4)),r=q2euler(lastQref),push=(a,v)=>{a.push(v);if(a.length>HMAX)a.shift()};
+ push(H.t,simT);push(H.ph,e[0]);push(H.th,e[1]);push(H.ps,e[2]);push(H.rph,r[0]);push(H.rth,r[1]);push(H.rps,r[2]);
+ push(H.tx,lastTau[0]);push(H.ty,lastTau[1]);push(H.tz,lastTau[2]);push(H.q0,state[0]);push(H.q1,state[1]);push(H.q2,state[2]);push(H.q3,state[3]);}
+/* ========================== Client-side slider slew limiter ==========================
+   Fast slider drags can jump controller gains by a large amount between animation frames.
+   The browser slider still moves freely, but the physics receives a bounded-rate effective
+   value. This prevents a rapid gain jump from making the stiff RK4 loop expensive enough
+   to stall the UI. The effective value converges to the selected slider value after drag.
+============================================================================ */
+const controlLimiter = {
+  Pq:    {value:Number(ui.Pq.value),    rate:24.0},
+  Pw:    {value:Number(ui.Pw.value),    rate:10.0},
+  noise: {value:Number(ui.noise.value), rate:0.22},
+  tmax:  {value:Number(ui.tmax.value),  rate:3.5}
+};
+function slew(current,target,maxDelta){
+  const d=target-current;
+  return Math.abs(d)<=maxDelta ? target : current+Math.sign(d)*maxDelta;
+}
+function updateLimitedControls(dt){
+  const h=Math.min(Math.max(dt,0),0.05);
+  for(const key of Object.keys(controlLimiter)){
+    const c=controlLimiter[key];
+    c.value=slew(c.value,Number(ui[key].value),c.rate*h);
+  }
+}
+function effectiveControls(){
+  return {Pq:controlLimiter.Pq.value,Pw:controlLimiter.Pw.value,noise:controlLimiter.noise.value,tmax:controlLimiter.tmax.value};
+}
+function substep(dt){
+ const c=effectiveControls(),Pq=c.Pq,Pw=c.Pw,na=c.noise,tmax=c.tmax;
+ lastQref=qnormz(getRef(simT));
+ const qmeas=qnormz(state.slice(0,4).map(v=>v+noise(na)));
+ const omeas=[state[4]+noise(na),state[5]+noise(na),state[6]+noise(na)];
+ let tau=torque(lastQref,qmeas,omeas,Pq,Pw,useShortest());
+ sat=tau.map(v=>Math.abs(v)>tmax);tau=tau.map(v=>Math.max(-tmax,Math.min(tmax,v)));lastTau=tau;
+ state=rk4(state,tau,dt);const q=qnormz(state.slice(0,4));state[0]=q[0];state[1]=q[1];state[2]=q[2];state[3]=q[3];
+}
+
+/* ========================== Drawing ========================== */
+const S=$('scene'),A=$('ang'),T=$('tau');
+const dpr=Math.max(1,window.devicePixelRatio||1);function fit(c){const r=c.getBoundingClientRect();c.width=Math.round(r.width*dpr);c.height=Math.round(r.height*dpr)}function fitAll(){fit(S);fit(A);fit(T)}window.addEventListener('resize',fitAll);fitAll();
+function vnorm(v){const n=Math.hypot(...v);return n<1e-15?[0,0,0]:v.map(x=>x/n)}function cross(a,b){return[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]]}function dot(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]}
+let camYaw=-.7,camPitch=.35,camDist=.95,spin=0;
+function cam(){const cp=[camDist*Math.cos(camPitch)*Math.sin(camYaw),camDist*Math.cos(camPitch)*Math.cos(camYaw),camDist*Math.sin(camPitch)],f=vnorm([-cp[0],-cp[1],-cp[2]]),r=vnorm(cross(f,[0,0,1])),u=cross(r,f);return{cp,f,r,u}}
+function proj(p,c,w,h){const rel=[p[0]-c.cp[0],p[1]-c.cp[1],p[2]-c.cp[2]],cf=dot(c.f,rel);if(cf<.01)return null;const f=Math.min(w,h)*.85;return[w/2+f*dot(c.r,rel)/cf,h/2-f*dot(c.u,rel)/cf,cf]}
+function line(ctx,p1,p2,c,w,h,col,lw=1,dash=[]){const a=proj(p1,c,w,h),b=proj(p2,c,w,h);if(!a||!b)return;ctx.strokeStyle=col;ctx.lineWidth=lw*dpr;ctx.setLineDash(dash.map(x=>x*dpr));ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();ctx.setLineDash([])}
+function label3(ctx,p,c,w,h,text,col,offset=0){
+ const s=proj(p,c,w,h);if(!s)return;
+ ctx.save();
+ ctx.fillStyle=col;
+ ctx.font='bold '+(12*dpr)+'px ui-sans-serif,system-ui,sans-serif';
+ ctx.textAlign='center';
+ ctx.textBaseline='middle';
+ ctx.shadowColor='rgba(0,0,0,.75)';
+ ctx.shadowBlur=4*dpr;
+ ctx.fillText(text,s[0],s[1]-offset*dpr);
+ ctx.restore();
+}
+const SC=S.getContext('2d'),AC=A.getContext('2d'),TC=T.getContext('2d');
+function drawScene(){const ctx=SC,w=S.width,h=S.height;ctx.clearRect(0,0,w,h);ctx.fillStyle='#0b0f14';ctx.fillRect(0,0,w,h);const R=q2R(state.slice(0,4)),c=cam();
+ const grid=.32,z=-.09;for(let i=-grid;i<=grid+.001;i+=.08){line(ctx,[-grid,i,z],[grid,i,z],c,w,h,'rgba(60,70,84,.45)',.5);line(ctx,[i,-grid,z],[i,grid,z],c,w,h,'rgba(60,70,84,.45)',.5)}
+ const L=.26;
+ line(ctx,[0,0,0],[L,0,0],c,w,h,'rgba(255,69,58,.35)',1.2,[3,3]);
+ line(ctx,[0,0,0],[0,L,0],c,w,h,'rgba(50,215,75,.35)',1.2,[3,3]);
+ line(ctx,[0,0,0],[0,0,L],c,w,h,'rgba(10,132,255,.35)',1.2,[3,3]);
+ label3(ctx,[L*1.18,0,0],c,w,h,'X','#ff453a',0);
+ label3(ctx,[0,L*1.18,0],c,w,h,'Y','#32d74b',0);
+ label3(ctx,[0,0,L*1.18],c,w,h,'Z','#0a84ff',0);
+ const tips=[[.15,.15,0],[-.15,-.15,0],[.15,-.15,0],[-.15,.15,0]];function rv(p){return Rv(R,p)};
+ // Reference ghost: same wireframe rotated by lastQref, dashed amber, drawn under
+ // the live (solid cyan/orange) body so the two are directly comparable in 3D --
+ // the same dashed-reference/solid-output convention as the 2D charts, extended
+ // into the viewport.
+ const Rref=q2R(lastQref);function rvRef(p){return Rv(Rref,p)};
+ line(ctx,rvRef(tips[0]),rvRef(tips[1]),c,w,h,'rgba(255,171,61,.55)',3,[5,4]);
+ line(ctx,rvRef(tips[2]),rvRef(tips[3]),c,w,h,'rgba(255,171,61,.55)',3,[5,4]);
+ line(ctx,[0,0,0],rvRef([.22,0,0]),c,w,h,'rgba(255,171,61,.4)',1.4,[3,3]);
+ line(ctx,[0,0,0],rvRef([0,.22,0]),c,w,h,'rgba(255,171,61,.4)',1.4,[3,3]);
+ line(ctx,[0,0,0],rvRef([0,0,.22]),c,w,h,'rgba(255,171,61,.4)',1.4,[3,3]);
+ line(ctx,rv(tips[0]),rv(tips[1]),c,w,h,'#00d4ff',5);line(ctx,rv(tips[2]),rv(tips[3]),c,w,h,'#ff9500',5);
+ line(ctx,[0,0,0],rv([.22,0,0]),c,w,h,'#ff453a',2);
+ line(ctx,[0,0,0],rv([0,.22,0]),c,w,h,'#32d74b',2);
+ line(ctx,[0,0,0],rv([0,0,.22]),c,w,h,'#0a84ff',2);
+ label3(ctx,rv([.25,0,0]),c,w,h,'X','#ff453a',0);
+ label3(ctx,rv([0,.25,0]),c,w,h,'Y','#32d74b',0);
+ label3(ctx,rv([0,0,.25]),c,w,h,'Z','#0a84ff',0);
+ for(let i=0;i<4;i++){const tb=tips[i],cw=rv(tb),rr=.058;const pts=[];for(let k=0;k<=20;k++){const a=2*Math.PI*k/20;pts.push(rv([tb[0]+rr*Math.cos(a),tb[1]+rr*Math.sin(a),tb[2]]))}for(let k=0;k<20;k++)line(ctx,pts[k],pts[k+1],c,w,h,'rgba(150,165,185,.48)',1);const dir=i<2?1:-1;for(let b=0;b<2;b++){const a=spin*dir+b*Math.PI;line(ctx,cw,rv([tb[0]+rr*Math.cos(a),tb[1]+rr*Math.sin(a),tb[2]]),c,w,h,'rgba(220,230,240,.55)',1.2)}}
+ const q=state.slice(0,4),e=q2euler(q);$('hud').innerHTML='<b>mode</b> '+mode.toUpperCase()+' · <b>t</b> '+simT.toFixed(2)+' s<br><b>q</b> ['+q.map(v=>v.toFixed(5)).join(', ')+']<br><span style="color:#ff453a;font-weight:700">X</span> <span style="color:#32d74b;font-weight:700">Y</span> <span style="color:#0a84ff;font-weight:700">Z</span> · body/world axes · <span style="color:#ffab3d">- - -</span> reference<br><span style="color:#58a6ff">φ '+e[0].toFixed(4)+'</span> <span style="color:#f0883e">θ '+e[1].toFixed(4)+'</span> <span style="color:#bc8cff">ψ '+e[2].toFixed(4)+'</span><br><span class="'+(sat.some(Boolean)?'danger':'ok')+'">'+(sat.some(Boolean)?'TORQUE SATURATING':'TORQUE IN BOUNDS')+'</span><br><span class="badge" style="border-color:#324052">CTRL '+(lastCtrlHz/1000).toFixed(1)+' kHz · dt '+(lastDt*1e6).toFixed(1)+' µs</span>';
+}
+function plot(ctx,series,ymin,ymax){const w=ctx.canvas.width,h=ctx.canvas.height;ctx.clearRect(0,0,w,h);if(H.t.length<2)return;const L=34*dpr,R=7*dpr,Tp=5*dpr,B=15*dpr,pw=w-L-R,ph=h-Tp-B,t0=H.t[0],t1=H.t[H.t.length-1],tr=Math.max(.01,t1-t0);const X=t=>L+(t-t0)/tr*pw,Y=v=>Tp+ph-(v-ymin)/(ymax-ymin)*ph;ctx.font=9*dpr+'px ui-monospace';ctx.lineWidth=.5*dpr;for(let k=Math.ceil(ymin/(Math.abs(ymax-ymin)/4))*(Math.abs(ymax-ymin)/4);k<=ymax+.0001;k+=Math.abs(ymax-ymin)/4){ctx.strokeStyle=k===0?'#303a46':'rgba(45,55,68,.55)';ctx.beginPath();ctx.moveTo(L,Y(k));ctx.lineTo(w-R,Y(k));ctx.stroke()}for(const s of series){ctx.strokeStyle=s.c;ctx.lineWidth=1.4*dpr;ctx.setLineDash(s.d? [4*dpr,3*dpr]:[]);ctx.beginPath();for(let i=0;i<s.a.length;i++){const x=X(H.t[i]),y=Y(s.a[i]);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();ctx.setLineDash([])}}
+const ATTITUDE_Y_RANGE={step:1.3,sine:0.65,flip:3.4,manual:3.3};
+function drawCharts(){const ca=AC,ct=TC,yv=ATTITUDE_Y_RANGE[mode]||1.3,yr=[-yv,yv];plot(ca,[{a:H.rph,c:'#58a6ff77',d:1},{a:H.ph,c:'#58a6ff'},{a:H.rth,c:'#f0883e77',d:1},{a:H.th,c:'#f0883e'},{a:H.rps,c:'#bc8cff77',d:1},{a:H.ps,c:'#bc8cff'}],yr[0],yr[1]);plot(ct,[{a:H.tx,c:'#58a6ff'},{a:H.ty,c:'#f0883e'},{a:H.tz,c:'#bc8cff'}],-Number(ui.tmax.value)*1.25,Number(ui.tmax.value)*1.25)}
+
+/* ========================== UI ========================== */
+function setMode(m){mode=m;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));stopAt=m==='flip'?5:15;reset();ui.phi.disabled=m!=='manual';ui.theta.disabled=m!=='manual';ui.psi.disabled=m!=='manual'}
+for(const b of document.querySelectorAll('[data-mode]'))b.addEventListener('click',()=>setMode(b.dataset.mode));
+$('reset').addEventListener('click',reset);$('pause').addEventListener('click',()=>{paused=!paused;$('pause').textContent=paused?'Resume':'Pause'});$('reseed').addEventListener('click',reset);$('csv').addEventListener('click',()=>{let out='t,phi,theta,psi,phi_ref,theta_ref,psi_ref,tau_x,tau_y,tau_z,q0,q1,q2,q3\n';for(let i=0;i<H.t.length;i++)out+=[H.t[i],H.ph[i],H.th[i],H.ps[i],H.rph[i],H.rth[i],H.rps[i],H.tx[i],H.ty[i],H.tz[i],H.q0[i],H.q1[i],H.q2[i],H.q3[i]].join(',')+'\n';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'text/csv'}));a.download='fresk_nikolakopoulos_'+mode+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
+function bindRange(id,out){$(id).addEventListener('input',()=>$(out).textContent=Number($(id).value).toFixed(id==='Pq'||id==='Pw'?1:id==='noise'||id==='tmax'?3:3))}
+const simNote=document.createElement('div');simNote.id='simNote';simNote.style.cssText='position:fixed;right:12px;bottom:8px;z-index:20;font:10px ui-monospace,monospace;color:#6e7681;pointer-events:none;';document.body.appendChild(simNote);
+simNote.textContent='Gain sliders are rate-limited on fast drags; the physics step itself adapts to Pω so high gains stay numerically stable.';
+bindRange('phi','phiV');bindRange('theta','thetaV');bindRange('psi','psiV');bindRange('Pq','PqV');bindRange('Pw','PwV');bindRange('noise','noiseV');bindRange('tmax','tmaxV');
+/* ========================== Equation sanity checks ========================== */
+(function audit(){const qs=euler2q(.4,-.2,.7),ee=q2euler(qs),u=qnorm(qs),ident=qmul(qs,qconj(qs));const pass=Math.abs(u-1)<1e-12&&Math.max(Math.abs(ee[0]-.4),Math.abs(ee[1]+.2),Math.abs(ee[2]-.7))<1e-12&&Math.abs(ident[0]-1)<1e-12&&Math.abs(ident[1])+Math.abs(ident[2])+Math.abs(ident[3])<1e-12;function t(n,s){return '<div><span class="'+(s?'ok':'danger')+'">'+(s?'✓':'✗')+'</span> '+n+'</div>'}$('audit').innerHTML=t('Quaternion multiplication / conjugate',pass)+t('Eq. (15) ↔ Eq. (16) round-trip',pass)+t('Unit-quaternion normalization',pass)+t('Eq. (18) rigid-body attitude state = 7 variables',true)+t('Published aerodynamic nonlinear plant fully reconstructible from supplied paper',false)+'<div class="note">The last item is intentionally marked false: the paper references a nonlinear model from reference [10] but does not provide its complete aerodynamic equations in the supplied article.</div>'})();
+
+/* ========================== Main loop ========================== */
+const MAX_SUBSTEPS_PER_FRAME=6000; // hard ceiling: never let a dropped frame freeze the UI
+let accumulator=0,frameCounter=0,lastDt=1e-4,lastCtrlHz=10000;
+function loop(ts){
+  if(!lastTs) lastTs=ts;
+  let realDt=(ts-lastTs)/1000;
+  lastTs=ts;
+  if(!Number.isFinite(realDt)||realDt<0) realDt=0;
+  realDt=Math.min(realDt,0.05);
+
+  updateLimitedControls(realDt);
+  const dt=stableDt(controlLimiter.Pw.value,0.5);
+  lastDt=dt; lastCtrlHz=1/dt;
+
+  if(!paused){
+    accumulator += realDt*Number(ui.speed.value);
+    let n=Math.floor(accumulator/dt);
+    if(n>MAX_SUBSTEPS_PER_FRAME){
+      // Drop excess wall-clock backlog instead of doing thousands of catch-up
+      // steps. This keeps the browser responsive after a temporary stall.
+      n=MAX_SUBSTEPS_PER_FRAME;
+      accumulator=0;
+    } else {
+      accumulator -= n*dt;
+    }
+    if(n>0 && simT<stopAt){
+      for(let i=0;i<n;i++){
+        substep(dt);
+        simT += dt;
+        if(simT>=stopAt){simT=stopAt;break;}
+      }
+      log();
+    }
+
+    if(simT>=stopAt){
+      if(ui.autoLoop.checked){
+        reset();
+        accumulator=0;
+      } else {
+        paused=true;
+        $('pause').textContent='Resume';
+      }
+    }
+  }
+
+  spin += realDt*40;
+  drawScene();
+  if((frameCounter++&1)===0) drawCharts(); // charts at ~30 FPS; 3D remains at display rate
+  $('tmaxLabel').textContent=Number(ui.tmax.value).toFixed(2);
+  requestAnimationFrame(loop);
+}
+
+/* Camera */
+let dragging=false,lastX=0,lastY=0;S.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;S.setPointerCapture(e.pointerId)});S.addEventListener('pointermove',e=>{if(!dragging)return;camYaw-=(e.clientX-lastX)*.008;camPitch=Math.max(-.05,Math.min(1.4,camPitch+(e.clientY-lastY)*.008));lastX=e.clientX;lastY=e.clientY});S.addEventListener('pointerup',()=>dragging=false);S.addEventListener('pointercancel',()=>dragging=false);S.addEventListener('wheel',e=>{e.preventDefault();camDist=Math.max(.35,Math.min(4,camDist*(e.deltaY>0?1.1:.9)))},{passive:false});
+window.addEventListener('keydown',e=>{if(e.target.matches('input,select'))return;if(e.code==='Space'){e.preventDefault();$('pause').click()}if(e.key==='1')setMode('step');if(e.key==='2')setMode('sine');if(e.key==='3')setMode('flip');if(e.key==='4')setMode('manual');if(e.key.toLowerCase()==='r')reset()});
+
+setMode('step');requestAnimationFrame(loop);
+</script>
+</body>
+</html>
