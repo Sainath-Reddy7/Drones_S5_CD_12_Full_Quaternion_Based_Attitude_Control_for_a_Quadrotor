@@ -78,8 +78,15 @@ documented in `REPORT.md`.
   controller fault — the paper pairs its Fig. 7 with Fig. 8 for exactly this
   reason).
 - **Torque chart** — commanded Mx/My/Mz vs. time, same window. With the
-  paper's noise amplitude (0.1) and gain ($P_q=20$), roughly ±2 N·m of
-  noise-driven torque is expected and real, not a display fault.
+  paper's noise amplitude (0.1) and gain ($P_q=20$), several N·m of
+  noise-driven torque is expected and real, not a display fault — it is why
+  this simulation's torque traces are busier than the paper's Fig. 6.
+
+Both charts **auto-scale their Y axis** to whatever is in the visible window
+and print numeric axis labels. A single fixed scale cannot serve every mode —
+the paper rescales per scenario too (Fig. 3 is −0.5…1.5 rad, Fig. 5 is
+−0.5…0.5, Fig. 7 is −4…4) — and a fixed ±3.3 squashed the sine scenario, whose
+real swing is only ±0.48 rad, into a near-flat line.
 
 Note: the history buffer restarts whenever the simulation is reset (entering
 an AUTO mode, or **Reset**), so the trace begins fresh from t=0 rather than

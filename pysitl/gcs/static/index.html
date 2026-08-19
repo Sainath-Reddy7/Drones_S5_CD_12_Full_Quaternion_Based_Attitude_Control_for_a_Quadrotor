@@ -384,19 +384,56 @@ function fitChart(c){ const r=c.getBoundingClientRect(); const dpr=window.device
   const w=Math.round(r.width*dpr), h=Math.round(r.height*dpr);
   if(c.width!==w||c.height!==h){c.width=w;c.height=h;} return {w:c.width,h:c.height}; }
 
-function drawStrip(c, ctx2, series, yrange){
+/** Y range fitted to the data actually in the window. A fixed range cannot
+ * serve every mode: the paper's own figures rescale per scenario (Fig. 3 is
+ * -0.5..1.5 rad, Fig. 5 is -0.5..0.5, Fig. 7 is -4..4). A single hardcoded
+ * +/-3.3 squashed the sine scenario (real swing only +/-0.48 rad) into ~14%
+ * of the chart height, which read as a flat line. minSpan stops a
+ * genuinely-still signal from zooming into its own noise floor. */
+function autoRange(series, minSpan){
+  let lo=Infinity, hi=-Infinity;
+  series.forEach(({key})=>hist.forEach(p=>{
+    const v=p[key];
+    if(Number.isFinite(v)){ if(v<lo) lo=v; if(v>hi) hi=v; }
+  }));
+  if(!Number.isFinite(lo)||!Number.isFinite(hi)) return [-minSpan/2, minSpan/2];
+  if(hi-lo < minSpan){ const mid=(hi+lo)/2; lo=mid-minSpan/2; hi=mid+minSpan/2; }
+  const pad=(hi-lo)*0.12;
+  return [lo-pad, hi+pad];
+}
+
+function drawStrip(c, ctx2, series, minSpan){
   const {w,h}=fitChart(c); ctx2.clearRect(0,0,w,h);
   if (hist.length<2) return;
-  const pad=6, t1=hist[hist.length-1].t, t0=Math.max(hist[0].t, t1-HIST_SECONDS);
+  const dpr=window.devicePixelRatio||1;
+  const padL=34*dpr, padR=6*dpr, padV=8*dpr;
+  const t1=hist[hist.length-1].t, t0=Math.max(hist[0].t, t1-HIST_SECONDS);
   // Guard a degenerate/backwards window rather than silently rescaling to a
   // 0.01 s span, which is what produced the off-screen garbage before.
   const span = t1-t0;
   if (!(span > 0)) return;
-  const X=t=>pad+((t-t0)/span)*(w-2*pad);
-  const Y=v=>h-pad-((v-yrange[0])/(yrange[1]-yrange[0]))*(h-2*pad);
-  ctx2.strokeStyle="rgba(135,148,168,.18)"; ctx2.lineWidth=1;
-  ctx2.setLineDash([]);
-  [yrange[0],(yrange[0]+yrange[1])/2,yrange[1]].forEach(v=>{ ctx2.beginPath(); ctx2.moveTo(pad,Y(v)); ctx2.lineTo(w-pad,Y(v)); ctx2.stroke(); });
+  const yr = autoRange(series, minSpan);
+  const X=t=>padL+((t-t0)/span)*(w-padL-padR);
+  const Y=v=>h-padV-((v-yr[0])/(yr[1]-yr[0]))*(h-2*padV);
+
+  // gridlines + numeric axis labels (previously the charts had no scale at
+  // all, so a correct trace was still unreadable)
+  const ticks=[yr[1],(yr[0]+yr[1])/2,yr[0]];
+  ctx2.setLineDash([]); ctx2.lineWidth=1;
+  ctx2.font=`${9.5*dpr}px ui-monospace,SFMono-Regular,Menlo,monospace`;
+  ctx2.textAlign="right"; ctx2.textBaseline="middle";
+  ticks.forEach(v=>{
+    ctx2.strokeStyle = Math.abs(v)<1e-9 ? "rgba(135,148,168,.34)" : "rgba(135,148,168,.16)";
+    ctx2.beginPath(); ctx2.moveTo(padL,Y(v)); ctx2.lineTo(w-padR,Y(v)); ctx2.stroke();
+    ctx2.fillStyle="rgba(135,148,168,.8)";
+    ctx2.fillText(v.toFixed(2), padL-4*dpr, Y(v));
+  });
+  // zero line, when zero is inside the visible range but not already a tick
+  if (yr[0]<0 && yr[1]>0){
+    ctx2.strokeStyle="rgba(135,148,168,.34)";
+    ctx2.beginPath(); ctx2.moveTo(padL,Y(0)); ctx2.lineTo(w-padR,Y(0)); ctx2.stroke();
+  }
+
   // Dashed = reference, solid = output -- same convention as the paper's
   // Figs. 3/5 and the static plots in docs/figures/.
   series.forEach(({key,color,dash})=>{
@@ -405,7 +442,7 @@ function drawStrip(c, ctx2, series, yrange){
     ctx2.globalAlpha=dash?0.75:1;
     ctx2.setLineDash(dash?[4,3]:[]);
     ctx2.beginPath();
-    hist.forEach((pt,i)=>{ const x=X(pt.t), y=Y(Math.max(yrange[0],Math.min(yrange[1],pt[key])));
+    hist.forEach((pt,i)=>{ const x=X(pt.t), y=Y(Math.max(yr[0],Math.min(yr[1],pt[key])));
       if(i===0) ctx2.moveTo(x,y); else ctx2.lineTo(x,y); });
     ctx2.stroke();
   });
@@ -436,16 +473,17 @@ function frame(ts){
     drawStrip(chartEuler, ceCtx, [
       {key:"q0Ref",color:"#42c9ff",dash:1}, {key:"q0",color:"#42c9ff"},
       {key:"q1Ref",color:"#ffab3d",dash:1}, {key:"q1",color:"#ffab3d"},
-    ], [-1.1,1.1]);
+    ], 0.5);
   } else {
     drawStrip(chartEuler, ceCtx, [
       {key:"phiRef",color:"#42c9ff",dash:1},   {key:"phi",color:"#42c9ff"},
       {key:"thetaRef",color:"#3ddc84",dash:1}, {key:"theta",color:"#3ddc84"},
       {key:"psiRef",color:"#ffab3d",dash:1},   {key:"psi",color:"#ffab3d"},
-    ], [-3.3,3.3]);
+    ], 0.2);
   }
-  const tl = latest ? latest.torque_limit : 4.0;
-  drawStrip(chartTorque, ctCtx, [{key:"taux",color:"#42c9ff"},{key:"tauy",color:"#3ddc84"},{key:"tauz",color:"#ffab3d"}], [-tl*1.1, tl*1.1]);
+  drawStrip(chartTorque, ctCtx, [
+    {key:"taux",color:"#42c9ff"},{key:"tauy",color:"#3ddc84"},{key:"tauz",color:"#ffab3d"}
+  ], 0.5);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
