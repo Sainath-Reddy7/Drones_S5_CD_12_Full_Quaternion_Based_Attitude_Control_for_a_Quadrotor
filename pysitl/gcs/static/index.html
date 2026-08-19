@@ -113,6 +113,9 @@ canvas.strip{width:100%;height:90px;display:block;border-radius:6px;background:#
         </div>
         <div class="hud-row">
           <div class="hud-chip">ALT <b id="hAlt">0.00</b> m &nbsp; TGT <b id="hTgt">-</b> m</div>
+          <div class="hud-chip">POS <b id="hPos">N 0.00 E 0.00</b></div>
+        </div>
+        <div class="hud-row">
           <div class="hud-chip">T <b id="hT">0.00</b> s</div>
         </div>
       </div>
@@ -175,6 +178,7 @@ function onSnapshot(s) {
   $("hCtrl").textContent = (s.control_hz/1000).toFixed(1) + " kHz";
   $("hAlt").textContent = s.altitude.toFixed(2);
   $("hTgt").textContent = s.target_altitude.toFixed(2);
+  $("hPos").textContent = `N ${s.pos[0].toFixed(2)} E ${s.pos[1].toFixed(2)}`;
   $("hT").textContent = s.t.toFixed(2);
 
   const armEl = $("armState");
@@ -227,6 +231,7 @@ function eulerOf(q){
 
 /* ---------------- 3D viewport (hand-rolled canvas projection) ---------------- */
 const canvas = $("scene"), ctx = canvas.getContext("2d");
+const dpr = Math.max(1, window.devicePixelRatio || 1);
 let cw=0, ch=0;
 function fitScene(){ const r=canvas.getBoundingClientRect(); const dpr=window.devicePixelRatio||1;
   canvas.width=Math.round(r.width*dpr); canvas.height=Math.round(r.height*dpr); cw=canvas.width; ch=canvas.height; }
@@ -264,6 +269,16 @@ function line(a,b,basis,color,w,dash){ const pa=project(a,basis), pb=project(b,b
 function dot(p, basis, color, r){ const pp=project(p,basis); if(!pp) return;
   ctx.save(); ctx.fillStyle=color; ctx.shadowColor=color; ctx.shadowBlur=6;
   ctx.beginPath(); ctx.arc(pp[0],pp[1],r,0,Math.PI*2); ctx.fill(); ctx.restore(); }
+function label3(p, basis, text, color){
+  const pp=project(p,basis); if(!pp) return;
+  ctx.save();
+  ctx.fillStyle=color;
+  ctx.font="bold "+Math.round(11*dpr)+"px ui-monospace,Menlo,monospace";
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.shadowColor="rgba(0,0,0,.8)"; ctx.shadowBlur=4;
+  ctx.fillText(text,pp[0],pp[1]);
+  ctx.restore();
+}
 function poly(points, basis, fill, stroke){
   const pp = points.map(p=>project(p,basis)); if (pp.some(p=>!p)) return;
   ctx.save(); ctx.beginPath(); ctx.moveTo(pp[0][0],pp[0][1]);
@@ -346,6 +361,9 @@ function drawDroneShape(q, posWorld, basis, opts){
     line(posWorld, toDraw([AXIS,0,0]), basis, "#ff453a", 1.5);
     line(posWorld, toDraw([0,AXIS,0]), basis, "#32d74b", 1.5);
     line(posWorld, toDraw([0,0,AXIS]), basis, "#0a84ff", 1.5);
+    label3(toDraw([AXIS*1.28,0,0]), basis, "x", "#ff453a");
+    label3(toDraw([0,AXIS*1.28,0]), basis, "y", "#32d74b");
+    label3(toDraw([0,0,AXIS*1.28]), basis, "z", "#0a84ff");
   }
 }
 
@@ -355,6 +373,15 @@ function drawScene(s){
   const posWorld=[s.pos[1], -s.pos[2], s.pos[0]]; // (north,east,down)->(x,y,z) draw axes, y-up for the viewer
   const basis=cameraBasis(posWorld);
   drawGroundGrid([0,0,0], basis);
+  // World-coordinate axes (NED): X=north, Y=east, Z=down — dashed + labeled,
+  // matching the standalone simulator's labeled reference frame.
+  const WL=0.6;
+  line([0,0,0],[0,0,WL],basis,"rgba(255,69,58,.55)",1.5,[3,3]);
+  line([0,0,0],[WL,0,0],basis,"rgba(50,215,75,.55)",1.5,[3,3]);
+  line([0,0,0],[0,-WL,0],basis,"rgba(10,132,255,.55)",1.5,[3,3]);
+  label3([0,0,WL*1.18],basis,"X","#ff453a");
+  label3([WL*1.18,0,0],basis,"Y","#32d74b");
+  label3([0,-WL*1.18],basis,"Z","#0a84ff");
 
   // reference ghost: dashed outline only, no fill/props/legs, so it never
   // competes visually with the live vehicle
