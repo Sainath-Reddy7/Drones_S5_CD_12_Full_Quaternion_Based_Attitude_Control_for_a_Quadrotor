@@ -27,7 +27,8 @@ pytest tests/test_sitl.py -v
 In the dashboard: **Arm**, pick a flight mode, and fly with `W/S` (pitch),
 `A/D` (roll), `Q/E` (yaw rate), `↑/↓` (throttle). STABILIZED throttle is
 direct thrust; ALTITUDE throttle is a climb-rate command around a held
-target. AUTO_STEP/SINE/FLIP run the paper's own scenarios.
+target. AUTO_STEP/SINE/FLIP run the paper's own scenarios. Full control
+reference, layout, and troubleshooting: [`UI_GUIDE.md`](UI_GUIDE.md).
 
 ## Why mass and geometry, when the paper only gives inertia
 
