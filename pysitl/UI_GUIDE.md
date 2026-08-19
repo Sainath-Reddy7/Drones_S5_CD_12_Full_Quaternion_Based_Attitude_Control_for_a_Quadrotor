@@ -84,6 +84,12 @@ documented in `REPORT.md`.
 Note: the history buffer restarts whenever the simulation is reset (entering
 an AUTO mode, or **Reset**), so the trace begins fresh from t=0 rather than
 splicing onto the previous run.
+
+Charts refresh at roughly 5–7 Hz rather than the nominal 50 Hz stream rate.
+That is a CPU/GIL limit, not a fault: the attitude loop calls the paper's real
+numpy controller 16000×/second, which keeps the physics thread busy for most
+of a core. The simulation itself still runs at ~1.0× real time — only the
+telemetry refresh is coarser. See `run.py:_physics_loop` for the measurements.
 - **Readout panel** — numeric snapshot: attitude error, |ω|, control rate,
   substep count, shortest-path flag, current gains.
 

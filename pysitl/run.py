@@ -29,8 +29,29 @@ def _physics_loop(sim: Simulation, stop: threading.Event) -> None:
     t_wall_start = time.perf_counter()
     sim_start = sim.scheduler.sim_time
     prev_sim_t = sim_start
+
+    # Step physics in batches rather than sleeping after every single 62.5 us
+    # tick: a per-tick sleep leaves almost no window for the GIL to transfer,
+    # starving the HTTP/SSE thread. Measured telemetry delivery improved from
+    # ~2 Hz to ~6 Hz with batching.
+    #
+    # ~6 Hz is roughly the ceiling here, not a tuning miss: sweeping the batch
+    # size (5/15/30 ms) moved it only between 5.2 and 6.0 Hz, so the limit is
+    # raw CPU rather than sleep granularity. The attitude loop calls the
+    # paper's real numpy NonlinearP2Controller 16000x/second (~34 us/call vs
+    # ~5.6 us for equivalent scalar code -- see control/attitude.py for why
+    # that tradeoff was taken deliberately), which keeps this thread busy for
+    # most of a core and leaves the GIL scarce. Lowering sys.setswitchinterval
+    # was also tried and made things worse (3.5 Hz, and RTF fell to 0.86x).
+    # The dashboard stays smooth enough at this rate; real-time accuracy of
+    # the simulation itself is unaffected (RTF holds ~1.0x).
+    batch = max(1, int(0.015 / sim.scheduler.base_dt))  # ~15 ms of sim per batch
+
     while not stop.is_set():
-        sim.scheduler.tick()
+        for _ in range(batch):
+            sim.scheduler.tick()
+            if stop.is_set():
+                break
         sim_t = sim.scheduler.sim_time
         if sim_t < prev_sim_t:  # rewind detected -- re-baseline the pacing
             t_wall_start = time.perf_counter()

@@ -103,10 +103,21 @@ def _make_handler(sim: Simulation):
             self.wfile.write(body)
 
         def _stream_events(self) -> None:
+            # An SSE body is unbounded, so under HTTP/1.1 it needs an explicit
+            # framing decision. Advertising keep-alive with neither
+            # Content-Length nor chunked encoding leaves the response
+            # undelimited: the browser cannot tell where it ends and stalls
+            # after a frame or two, which freezes the whole dashboard (charts
+            # stop updating and button clicks appear to do nothing, because
+            # the POSTs still succeed but no telemetry comes back).
+            # Close-delimited streaming is the correct, simple choice here.
+            # The short GET/POST endpoints still use HTTP/1.1 keep-alive --
+            # they send Content-Length, and that is what keeps buttons snappy.
+            self.close_connection = True
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
             self.send_header("Cache-Control", "no-cache")
-            self.send_header("Connection", "keep-alive")
+            self.send_header("Connection", "close")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             period = 1.0 / STREAM_HZ
