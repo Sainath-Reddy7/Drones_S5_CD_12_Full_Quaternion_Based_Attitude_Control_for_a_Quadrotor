@@ -92,38 +92,42 @@ p_0 q_1 + p_1 q_0 + p_2 q_3 - p_3 q_2 \\
 p_0 q_2 - p_1 q_3 + p_2 q_0 + p_3 q_1 \\
 p_0 q_3 + p_1 q_2 - p_2 q_1 + p_3 q_0
 \end{bmatrix}
-\tag{1–2}
 $$
 
-which can equivalently be written as a matrix–vector product using either
-the left- or right-multiplication matrix,
+*(Eq. 1–2)*
+
+which can equivalently be written as a matrix–vector product using either a
+left- or a right-multiplication matrix, $p\otimes q = Q(p)\,q = \bar{Q}(q)\,p$:
 
 $$
-p \otimes q = Q(p)\,q = \bar{Q}(q)\,p, \qquad
 Q(p) =
 \begin{bmatrix}
 p_0 & -p_1 & -p_2 & -p_3 \\
 p_1 &  p_0 & -p_3 &  p_2 \\
 p_2 &  p_3 &  p_0 & -p_1 \\
 p_3 & -p_2 &  p_1 &  p_0
-\end{bmatrix},\quad
+\end{bmatrix}
+\qquad
 \bar{Q}(q) =
 \begin{bmatrix}
 q_0 & -q_1 & -q_2 & -q_3 \\
 q_1 &  q_0 &  q_3 & -q_2 \\
 q_2 & -q_3 &  q_0 &  q_1 \\
 q_3 &  q_2 & -q_1 &  q_0
-\end{bmatrix}.
+\end{bmatrix}
 $$
 
 Norm, conjugate, and inverse follow the usual complex-number definitions:
 
 $$
-\lVert q \rVert = \sqrt{q_0^2+q_1^2+q_2^2+q_3^2}, \qquad
-q^* = [\,q_0,\,-q_1,\,-q_2,\,-q_3\,]^T, \qquad
-q^{-1} = \frac{q^*}{\lVert q \rVert^2}.
-\tag{3–5}
+\begin{aligned}
+\lVert q \rVert &= \sqrt{q_0^2+q_1^2+q_2^2+q_3^2} \\
+q^* &= [\,q_0,\,-q_1,\,-q_2,\,-q_3\,]^T \\
+q^{-1} &= \frac{q^*}{\lVert q \rVert^2}
+\end{aligned}
 $$
+
+*(Eq. 3–5)*
 
 The quaternion time-derivative has two forms depending on whether the
 angular velocity $\omega$ is expressed in the fixed (world) frame or the
@@ -131,37 +135,45 @@ body frame:
 
 $$
 \dot q_\omega(q,\omega) = \tfrac{1}{2}\, q \otimes [0,\omega]^T
-= \tfrac{1}{2} Q(q)[0,\omega]^T,
-\tag{6}
+= \tfrac{1}{2} Q(q)[0,\omega]^T
 $$
+
+*(Eq. 6)*
 
 $$
 \dot q_{\omega'}(q,\omega') = \tfrac{1}{2}\, [0,\omega']^T \otimes q
-= \tfrac{1}{2} \bar{Q}(q)[0,\omega']^T.
-\tag{7}
+= \tfrac{1}{2} \bar{Q}(q)[0,\omega']^T
 $$
+
+*(Eq. 7)*
 
 A vector $v$ is rotated from the fixed frame into the body frame represented
 by $q$ via the sandwich product
 
 $$
-w = q \otimes [0,v]^T \otimes q^*,
-\tag{8}
+w = q \otimes [0,v]^T \otimes q^*
 $$
+
+*(Eq. 8)*
 
 which expands, axis by axis, into the columns of the rotation (direction
 cosine) matrix:
 
 $$
-R_x(q) = \begin{bmatrix} q_0^2+q_1^2-q_2^2-q_3^2 \\ 2(q_1q_2+q_0q_3) \\ 2(q_1q_3-q_0q_2)\end{bmatrix}\!,\;
-R_y(q) = \begin{bmatrix} 2(q_1q_2-q_0q_3) \\ q_0^2-q_1^2+q_2^2-q_3^2 \\ 2(q_2q_3+q_0q_1)\end{bmatrix}\!,\;
-R_z(q) = \begin{bmatrix} 2(q_1q_3+q_0q_2) \\ 2(q_2q_3-q_0q_1) \\ q_0^2-q_1^2-q_2^2+q_3^2\end{bmatrix}\!,
-\tag{9–11}
+\begin{aligned}
+R_x(q) &= \begin{bmatrix} q_0^2+q_1^2-q_2^2-q_3^2 \\ 2(q_1q_2+q_0q_3) \\ 2(q_1q_3-q_0q_2)\end{bmatrix} \\[6pt]
+R_y(q) &= \begin{bmatrix} 2(q_1q_2-q_0q_3) \\ q_0^2-q_1^2+q_2^2-q_3^2 \\ 2(q_2q_3+q_0q_1)\end{bmatrix} \\[6pt]
+R_z(q) &= \begin{bmatrix} 2(q_1q_3+q_0q_2) \\ 2(q_2q_3-q_0q_1) \\ q_0^2-q_1^2-q_2^2+q_3^2\end{bmatrix}
+\end{aligned}
 $$
 
+*(Eq. 9–11)*
+
 $$
-R(q) = \big[\,R_x(q) \;\; R_y(q) \;\; R_z(q)\,\big]. \tag{12}
+R(q) = \big[\,R_x(q) \;\; R_y(q) \;\; R_z(q)\,\big]
 $$
+
+*(Eq. 12)*
 
 $R(q)$ rotates a point from body to fixed frame; its transpose rotates the
 frame itself (eq. 13), a distinction that matters and is discussed in §4.3.
@@ -169,31 +181,34 @@ An axis-angle rotation of angle $\alpha$ about unit axis $u$ maps to a
 quaternion in closed form,
 
 $$
-q = \cos(\alpha/2) + u\sin(\alpha/2),
-\tag{14}
+q = \cos(\alpha/2) + u\sin(\alpha/2)
 $$
+
+*(Eq. 14)*
 
 and Euler angles $(\phi,\theta,\psi)$ convert to and from a quaternion via
 
 $$
 q = \begin{bmatrix}
-\cos\frac\phi2\cos\frac\theta2\cos\frac\psi2+\sin\frac\phi2\sin\frac\theta2\sin\frac\psi2\\[2pt]
-\sin\frac\phi2\cos\frac\theta2\cos\frac\psi2-\cos\frac\phi2\sin\frac\theta2\sin\frac\psi2\\[2pt]
-\cos\frac\phi2\sin\frac\theta2\cos\frac\psi2+\sin\frac\phi2\cos\frac\theta2\sin\frac\psi2\\[2pt]
+\cos\frac\phi2\cos\frac\theta2\cos\frac\psi2+\sin\frac\phi2\sin\frac\theta2\sin\frac\psi2\\
+\sin\frac\phi2\cos\frac\theta2\cos\frac\psi2-\cos\frac\phi2\sin\frac\theta2\sin\frac\psi2\\
+\cos\frac\phi2\sin\frac\theta2\cos\frac\psi2+\sin\frac\phi2\cos\frac\theta2\sin\frac\psi2\\
 \cos\frac\phi2\cos\frac\theta2\sin\frac\psi2-\sin\frac\phi2\sin\frac\theta2\cos\frac\psi2
-\end{bmatrix}\!,
-\tag{15}
+\end{bmatrix}
 $$
+
+*(Eq. 15)*
 
 $$
 \begin{bmatrix}\phi\\\theta\\\psi\end{bmatrix} =
 \begin{bmatrix}
-\operatorname{atan2}\!\big(2(q_0q_1+q_2q_3),\, q_0^2-q_1^2-q_2^2+q_3^2\big)\\[2pt]
-\arcsin\!\big(2(q_0q_2-q_3q_1)\big)\\[2pt]
+\operatorname{atan2}\!\big(2(q_0q_1+q_2q_3),\, q_0^2-q_1^2-q_2^2+q_3^2\big)\\
+\arcsin\!\big(2(q_0q_2-q_3q_1)\big)\\
 \operatorname{atan2}\!\big(2(q_0q_3+q_1q_2),\, q_0^2+q_1^2-q_2^2-q_3^2\big)
-\end{bmatrix}\!.
-\tag{16}
+\end{bmatrix}
 $$
+
+*(Eq. 16)*
 
 Equation (16) is used **only** for plotting and logging in this
 implementation, never inside the plant or the controller — the entire closed
@@ -207,18 +222,22 @@ $$
 \begin{bmatrix} F \\ \tau \end{bmatrix} =
 \begin{bmatrix} m & 0 \\ 0 & I_{cm} \end{bmatrix}
 \begin{bmatrix} a_{cm} \\ \dot\omega \end{bmatrix}
-+ \begin{bmatrix} 0 \\ \omega \times (I_{cm}\omega) \end{bmatrix}.
-\tag{17}
++ \begin{bmatrix} 0 \\ \omega \times (I_{cm}\omega) \end{bmatrix}
 $$
+
+*(Eq. 17)*
 
 Combining the body-frame quaternion kinematics with the rotational half of
 eq. (17) gives the paper's plant, eq. (18):
 
 $$
-\dot q = -\tfrac12\,[0,\omega]^T \otimes q, \qquad
-\dot\omega = I_{cm}^{-1}\tau - I_{cm}^{-1}\big[\omega \times (I_{cm}\omega)\big].
-\tag{18}
+\begin{aligned}
+\dot q &= -\tfrac12\,[0,\omega]^T \otimes q \\
+\dot\omega &= I_{cm}^{-1}\tau - I_{cm}^{-1}\big[\omega \times (I_{cm}\omega)\big]
+\end{aligned}
 $$
+
+*(Eq. 18)*
 
 The leading **minus** sign on $\dot q$ is not a typo — it is the paper's own
 published convention, the opposite sign of the general form in eq. (7), and
@@ -234,14 +253,18 @@ Given a reference quaternion $q_{ref}$ and a measured quaternion $q_m$, the
 error quaternion is
 
 $$
-q_{err} = q_{ref} \otimes q_m^{*}. \tag{19}
+q_{err} = q_{ref} \otimes q_m^{*}
 $$
+
+*(Eq. 19)*
 
 Its vector part is a first-order proxy for the axis-angle attitude error:
 
 $$
-\mathrm{Axis}_{err} = [\,q_{err,1},\,q_{err,2},\,q_{err,3}\,]^T. \tag{20}
+\mathrm{Axis}_{err} = [\,q_{err,1},\,q_{err,2},\,q_{err,3}\,]^T
 $$
+
+*(Eq. 20)*
 
 Because a rotation of more than $\pi$ radians has a shorter path in the
 opposite direction, the sign of $\mathrm{Axis}_{err}$ is flipped whenever
@@ -252,9 +275,10 @@ is a derivative-free, non-linear proportional-squared feedback on the
 attitude and rate errors:
 
 $$
-\tau = -P_q\,\mathrm{Axis}_{err} - P_\omega\,\omega_m,
-\tag{21}
+\tau = -P_q\,\mathrm{Axis}_{err} - P_\omega\,\omega_m
 $$
+
+*(Eq. 21)*
 
 with the paper's tuned gains $P_q=20$, $P_\omega=4$, and $\pm4\,\mathrm{N\,m}$
 per-axis torque saturation. No integral term is present or added: the
@@ -268,11 +292,14 @@ $0.1$ on both the quaternion and the body rates, with the quaternion
 renormalized after injection:
 
 $$
-q_m = \frac{q_{true} + n_q}{\lVert q_{true}+n_q \rVert}, \quad
-\omega_m = \omega_{true} + n_\omega, \qquad
-n_q,\,n_\omega \sim \mathcal U(-0.1,\,0.1).
-\tag{22}
+\begin{aligned}
+q_m &= \frac{q_{true} + n_q}{\lVert q_{true}+n_q \rVert} \\
+\omega_m &= \omega_{true} + n_\omega \\
+n_q,\,n_\omega &\sim \mathcal U(-0.1,\,0.1)
+\end{aligned}
 $$
+
+*(Eq. 22)*
 
 ### 2.5 A Discrete-Time Stability Analysis Not Present in the Paper
 
@@ -286,18 +313,23 @@ about the identity attitude, with $e$ the small-angle attitude error, gives a
 standard second-order system,
 
 $$
-I\,\ddot e + P_\omega\,\dot e + \tfrac{P_q}{2}\,e = 0,
-\tag{23}
+I\,\ddot e + P_\omega\,\dot e + \tfrac{P_q}{2}\,e = 0
 $$
+
+*(Eq. 23)*
 
 whose characteristic roots, using the paper's own $P_q=20$, $P_\omega=4$,
 $I=I_{xx}=6.5\times10^{-4}$, are
 
 $$
 \lambda_{1,2} = \frac{-P_\omega \pm \sqrt{P_\omega^2 - 2 I P_q}}{2I}
-\;\approx\; -2.5\ \mathrm{rad/s},\;\; -6150\ \mathrm{rad/s}.
-\tag{24}
 $$
+
+$$
+\lambda_1 \approx -2.5\ \mathrm{rad/s}, \qquad \lambda_2 \approx -6150\ \mathrm{rad/s}
+$$
+
+*(Eq. 24)*
 
 Both roots are real and negative: the *continuous-time* closed loop is
 heavily overdamped ($\zeta\approx25$) and perfectly well-behaved — the slow
@@ -307,12 +339,13 @@ open-loop plant with zero-order hold at sample interval $\Delta t$ gives the
 exact transition pair
 
 $$
-\Phi(\Delta t) = e^{A\Delta t}=\begin{bmatrix}1 & \Delta t\\0&1\end{bmatrix},
-\qquad
+\Phi(\Delta t) = e^{A\Delta t}=\begin{bmatrix}1 & \Delta t\\0&1\end{bmatrix}
+\qquad\qquad
 \Gamma(\Delta t) = \int_0^{\Delta t}\! e^{As}\,ds\;B =
-\begin{bmatrix}\Delta t^2/2I\\ \Delta t/I\end{bmatrix},
-\tag{25}
+\begin{bmatrix}\Delta t^2/2I\\ \Delta t/I\end{bmatrix}
 $$
+
+*(Eq. 25)*
 
 and the discrete closed-loop transition matrix $A_{cl}=\Phi+\Gamma K$, with
 feedback gain $K=[-P_q/2,\,-P_\omega]$. Evaluating the spectral radius of
@@ -334,10 +367,14 @@ as the rate at which the fast pole's discretization first re-enters the
 unit disk with a chosen safety margin $m$:
 
 $$
-f_{control} \;\ge\; \frac{P_\omega}{m \cdot I_{\min}}, \qquad
-\text{implemented as } f_{control}=\frac{P_\omega}{0.5\cdot I_{\min}}\approx 12.3\ \mathrm{kHz}.
-\tag{26}
+f_{control} \;\ge\; \frac{P_\omega}{m \cdot I_{\min}}
 $$
+
+$$
+\text{implemented with } m=0.5: \qquad f_{control}=\frac{P_\omega}{0.5\cdot I_{\min}}\approx 12.3\ \mathrm{kHz}
+$$
+
+*(Eq. 26)*
 
 This project's simulator (`quat_sitl/dynamics.py:stable_control_rate_hz`)
 computes eq. (26) directly from whatever gains and inertia are configured,
@@ -355,17 +392,25 @@ planar-X point-mass quadrotor, in which four rotor point masses at arm
 length $L$ contribute
 
 $$
-I_{xx}^{rotors}=I_{yy}^{rotors}=4 m_r d^2, \qquad
-I_{zz}^{rotors}=8 m_r d^2, \qquad d = \frac{L}{\sqrt2},
-\tag{27}
+\begin{aligned}
+I_{xx}^{rotors} = I_{yy}^{rotors} &= 4 m_r d^2 \\
+I_{zz}^{rotors} &= 8 m_r d^2 \\
+d &= \frac{L}{\sqrt2}
+\end{aligned}
 $$
+
+*(Eq. 27)*
 
 so that, adding an isotropic central-body inertia $I_b$,
 
 $$
-m_r = \frac{I_{zz}-I_{xx}}{2L^2}, \qquad I_b = 2I_{xx}-I_{zz}.
-\tag{28}
+\begin{aligned}
+m_r &= \frac{I_{zz}-I_{xx}}{2L^2} \\
+I_b &= 2I_{xx}-I_{zz}
+\end{aligned}
 $$
+
+*(Eq. 28)*
 
 With $L=0.15\,\mathrm m$, this gives $m_r\approx12.2\,\mathrm g$ per rotor
 and, with an assumed $150\,\mathrm g$ central body,
@@ -374,12 +419,15 @@ Each rotor produces thrust $T_i \ge 0$ along body $-z$ and a reaction torque
 proportional to thrust; the forward (rotor-thrusts-to-wrench) mixer is
 
 $$
-F_z=-\!\sum_i T_i,\quad
-\tau_x=-d(T_1-T_2-T_3+T_4),\quad
-\tau_y=d(T_1-T_2+T_3-T_4),\quad
-\tau_z=c(T_1+T_2-T_3-T_4),
-\tag{29}
+\begin{aligned}
+F_z &=-\sum_i T_i \\
+\tau_x &=-d(T_1-T_2-T_3+T_4) \\
+\tau_y &=d(T_1-T_2+T_3-T_4) \\
+\tau_z &=c(T_1+T_2-T_3-T_4)
+\end{aligned}
 $$
+
+*(Eq. 29)*
 
 with $c$ the yaw reaction coefficient. Inverting eq. (29) to allocate a
 commanded thrust and torque to four non-negative, bounded rotor thrusts
@@ -392,10 +440,13 @@ zero-sum torque-driven deltas by the largest factor $s\in[0,1]$ that keeps
 every rotor within $[0,T_{max}]$:
 
 $$
-T_i = \frac{T_c}{4} + s\,D_i, \qquad \sum_i D_i = 0, \qquad
-s=\min_i\Big\{1,\ \text{feasible bound from } D_i\Big\},
-\tag{30}
+\begin{aligned}
+T_i &= \frac{T_c}{4} + s\,D_i, \qquad \sum_i D_i = 0 \\
+s &=\min_i\big\{1,\ \text{feasible bound from } D_i\big\}
+\end{aligned}
 $$
+
+*(Eq. 30)*
 
 which preserves $\sum_i T_i = T_c$ exactly, for any $s$.
 
