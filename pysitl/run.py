@@ -17,12 +17,26 @@ from .sim import Simulation
 
 def _physics_loop(sim: Simulation, stop: threading.Event) -> None:
     """Runs in real time until `stop` is set -- used for --gcs sessions,
-    where the flight duration isn't known up front (the pilot decides)."""
+    where the flight duration isn't known up front (the pilot decides).
+
+    Selecting an AUTO mode (or hitting Reset) rewinds scheduler.sim_time to 0.
+    The wall-clock baseline must be re-established when that happens: otherwise
+    (sim_time - sim_start) goes negative, `target` lands far in the past, `lag`
+    is never positive, and the loop stops sleeping altogether -- sprinting at
+    max CPU until sim_time catches back up. Measured before this fix: a
+    scenario ran ~6x faster than real time after a single mode switch.
+    """
     t_wall_start = time.perf_counter()
     sim_start = sim.scheduler.sim_time
+    prev_sim_t = sim_start
     while not stop.is_set():
         sim.scheduler.tick()
-        target = t_wall_start + (sim.scheduler.sim_time - sim_start)
+        sim_t = sim.scheduler.sim_time
+        if sim_t < prev_sim_t:  # rewind detected -- re-baseline the pacing
+            t_wall_start = time.perf_counter()
+            sim_start = sim_t
+        prev_sim_t = sim_t
+        target = t_wall_start + (sim_t - sim_start)
         lag = target - time.perf_counter()
         if lag > 0:
             time.sleep(lag)

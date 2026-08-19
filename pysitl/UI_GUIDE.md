@@ -70,8 +70,20 @@ documented in `REPORT.md`.
 
 ## Right rail
 
-- **Attitude chart** — φ/θ/ψ vs. time, last ~12s scrolling window.
-- **Torque chart** — commanded Mx/My/Mz vs. time, same window.
+- **Attitude chart** — φ/θ/ψ vs. time, last ~12s scrolling window. **Dashed =
+  reference, solid = output**, same convention as the paper's Figs. 3/5 — the
+  gap between the pair is the tracking error. In **Auto Flip** the chart
+  switches automatically to raw `q0`/`q1`, because wrapped Euler φ jumps
+  discontinuously at ±π through a full rotation (an `atan2` artifact, not a
+  controller fault — the paper pairs its Fig. 7 with Fig. 8 for exactly this
+  reason).
+- **Torque chart** — commanded Mx/My/Mz vs. time, same window. With the
+  paper's noise amplitude (0.1) and gain ($P_q=20$), roughly ±2 N·m of
+  noise-driven torque is expected and real, not a display fault.
+
+Note: the history buffer restarts whenever the simulation is reset (entering
+an AUTO mode, or **Reset**), so the trace begins fresh from t=0 rather than
+splicing onto the previous run.
 - **Readout panel** — numeric snapshot: attitude error, |ω|, control rate,
   substep count, shortest-path flag, current gains.
 

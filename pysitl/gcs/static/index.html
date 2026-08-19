@@ -125,7 +125,7 @@ canvas.strip{width:100%;height:90px;display:block;border-radius:6px;background:#
     <div class="rail">
       <div class="panel">
         <div class="chart-block">
-          <div class="chart-head"><span>Attitude [rad]</span><span>&phi; &theta; &psi;</span></div>
+          <div class="chart-head"><span id="attHead">Attitude [rad]</span><span id="attLegend">&phi; &theta; &psi;</span></div>
           <canvas class="strip" id="chartEuler"></canvas>
         </div>
         <div class="chart-block">
@@ -199,7 +199,22 @@ function onSnapshot(s) {
 const HIST_SECONDS = 12;
 const hist = [];
 function pushHistory(s){
-  hist.push({t:s.t, ...eulerOf(s.q), taux:s.tau[0], tauy:s.tau[1], tauz:s.tau[2]});
+  // Entering an AUTO mode (or hitting Reset) rewinds sim_time to 0. The old
+  // prune loop only trimmed samples going FORWARD in time, so after a rewind
+  // the buffer kept stale far-future timestamps, t1-t0 went negative, and the
+  // X-axis collapsed to a garbage scale (measured: points landing at
+  // X = -3,096,449 px). Detect the rewind and start a fresh trace.
+  if (hist.length && s.t < hist[hist.length-1].t) hist.length = 0;
+
+  const e = eulerOf(s.q), r = eulerOf(s.q_ref);
+  hist.push({
+    t: s.t,
+    phi: e.phi, theta: e.theta, psi: e.psi,
+    phiRef: r.phi, thetaRef: r.theta, psiRef: r.psi,
+    q0: s.q[0], q1: s.q[1],
+    q0Ref: s.q_ref[0], q1Ref: s.q_ref[1],
+    taux: s.tau[0], tauy: s.tau[1], tauz: s.tau[2],
+  });
   while (hist.length && s.t - hist[0].t > HIST_SECONDS) hist.shift();
 }
 function eulerOf(q){
@@ -373,16 +388,28 @@ function drawStrip(c, ctx2, series, yrange){
   const {w,h}=fitChart(c); ctx2.clearRect(0,0,w,h);
   if (hist.length<2) return;
   const pad=6, t1=hist[hist.length-1].t, t0=Math.max(hist[0].t, t1-HIST_SECONDS);
-  const X=t=>pad+((t-t0)/Math.max(0.01,t1-t0))*(w-2*pad);
+  // Guard a degenerate/backwards window rather than silently rescaling to a
+  // 0.01 s span, which is what produced the off-screen garbage before.
+  const span = t1-t0;
+  if (!(span > 0)) return;
+  const X=t=>pad+((t-t0)/span)*(w-2*pad);
   const Y=v=>h-pad-((v-yrange[0])/(yrange[1]-yrange[0]))*(h-2*pad);
   ctx2.strokeStyle="rgba(135,148,168,.18)"; ctx2.lineWidth=1;
+  ctx2.setLineDash([]);
   [yrange[0],(yrange[0]+yrange[1])/2,yrange[1]].forEach(v=>{ ctx2.beginPath(); ctx2.moveTo(pad,Y(v)); ctx2.lineTo(w-pad,Y(v)); ctx2.stroke(); });
-  series.forEach(({key,color})=>{
-    ctx2.strokeStyle=color; ctx2.lineWidth=1.6; ctx2.beginPath();
+  // Dashed = reference, solid = output -- same convention as the paper's
+  // Figs. 3/5 and the static plots in docs/figures/.
+  series.forEach(({key,color,dash})=>{
+    ctx2.strokeStyle=color;
+    ctx2.lineWidth=dash?1.2:1.6;
+    ctx2.globalAlpha=dash?0.75:1;
+    ctx2.setLineDash(dash?[4,3]:[]);
+    ctx2.beginPath();
     hist.forEach((pt,i)=>{ const x=X(pt.t), y=Y(Math.max(yrange[0],Math.min(yrange[1],pt[key])));
       if(i===0) ctx2.moveTo(x,y); else ctx2.lineTo(x,y); });
     ctx2.stroke();
   });
+  ctx2.globalAlpha=1; ctx2.setLineDash([]);
 }
 
 /* ---------------- render loop ---------------- */
@@ -396,7 +423,27 @@ function frame(ts){
   }
 
   drawScene(latest);
-  drawStrip(chartEuler, ceCtx, [{key:"phi",color:"#42c9ff"},{key:"theta",color:"#3ddc84"},{key:"psi",color:"#ffab3d"}], [-3.3,3.3]);
+
+  // During a full-rotation flip, wrapped Euler phi jumps discontinuously at
+  // +/-pi -- an inherent atan2 artifact, not a bug (see REPORT.md / paper
+  // Figs. 7-8: the paper pairs the same wrapped-phi plot with a raw q0,q1
+  // plot for exactly this reason). Switch to the smooth, singularity-free
+  // q0/q1 view automatically so the chart doesn't look "broken" mid-flip.
+  const inFlip = latest && latest.mode === "AUTO_FLIP";
+  $("attHead").textContent = inFlip ? "Attitude — raw quaternion [flip]" : "Attitude [rad]";
+  $("attLegend").innerHTML = inFlip ? "q<sub>0</sub> q<sub>1</sub>" : "&phi; &theta; &psi;";
+  if (inFlip) {
+    drawStrip(chartEuler, ceCtx, [
+      {key:"q0Ref",color:"#42c9ff",dash:1}, {key:"q0",color:"#42c9ff"},
+      {key:"q1Ref",color:"#ffab3d",dash:1}, {key:"q1",color:"#ffab3d"},
+    ], [-1.1,1.1]);
+  } else {
+    drawStrip(chartEuler, ceCtx, [
+      {key:"phiRef",color:"#42c9ff",dash:1},   {key:"phi",color:"#42c9ff"},
+      {key:"thetaRef",color:"#3ddc84",dash:1}, {key:"theta",color:"#3ddc84"},
+      {key:"psiRef",color:"#ffab3d",dash:1},   {key:"psi",color:"#ffab3d"},
+    ], [-3.3,3.3]);
+  }
   const tl = latest ? latest.torque_limit : 4.0;
   drawStrip(chartTorque, ctCtx, [{key:"taux",color:"#42c9ff"},{key:"tauy",color:"#3ddc84"},{key:"tauz",color:"#ffab3d"}], [-tl*1.1, tl*1.1]);
   requestAnimationFrame(frame);
