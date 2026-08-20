@@ -101,18 +101,52 @@
 <script>
 "use strict";
 
+/* ===================== Equation index (Fresk & Nikolakopoulos, ECC 2013) =====================
+   Eq. (1)-(2)  quaternion representation + Hamilton product ... qmul
+   Eq. (3)       norm ||q|| = sqrt(q0^2+q1^2+q2^2+q3^2) ......... qnorm
+   Eq. (4)       conjugate q* = [q0,-q1,-q2,-q3] ................. qconj
+   Eq. (5)       inverse q^-1 = q* / ||q||^2 ................... qinv
+   Eq. (6)-(7)   quaternion derivative forms ..................... (inside deriv, via qmul)
+   Eq. (8)       vector rotation w = q (x) [0,v] (x) q* .......... q2R columns
+   Eq. (9)-(13)  direction cosine matrix R(q), transpose form ..... q2R
+   Eq. (14)      axis-angle -> quaternion ....................... axang2q
+   Eq. (15)      Euler (ZYX) -> quaternion ...................... euler2q
+   Eq. (16)      quaternion -> Euler, PLOTTING ONLY ............. q2euler
+   Eq. (17)-(18) rigid-body attitude plant ...................... deriv (+ IXX/IYY/IZZ)
+   Eq. (19)      error quaternion q_err = q_ref (x) q_m* ........ torque
+   Eq. (20)      Axis_err = vector part of q_err ................ torque
+   Eq. (21)      control law tau = -Pq*Axis_err - Pw*omega_m .... torque
+   Paper Section V: inertia, gains Pq=20 / Pw=4, +/-4 N*m saturation,
+   0.1-amplitude measurement noise (rng/noise below).
+================================================================================================ */
+
 /* ========================== Quaternion algebra ========================== */
+/* Eq. (1): a quaternion is the hyper-complex number q = q0 + q1*i + q2*j + q3*k;
+   it is stored here in scalar-first vector form [q0, q1, q2, q3] (eq. (1)'s
+   vector representation), constrained to unit length. */
+/* Eq. (2): Hamilton/Kronecker product p (x) q — non-commutative, exactly the
+   component equations of the paper's eq. (2); the left/right multiplication
+   matrices Q(p) and Qbar(q) of eq. (2) compute this same product. */
 function qmul(p,q){return[
   p[0]*q[0]-p[1]*q[1]-p[2]*q[2]-p[3]*q[3],
   p[0]*q[1]+p[1]*q[0]+p[2]*q[3]-p[3]*q[2],
   p[0]*q[2]-p[1]*q[3]+p[2]*q[0]+p[3]*q[1],
   p[0]*q[3]+p[1]*q[2]-p[2]*q[1]+p[3]*q[0]
 ]}
+/* Eq. (4): conjugate — negate the vector part, keep the scalar part. */
 function qconj(q){return[q[0],-q[1],-q[2],-q[3]]}
+/* Eq. (3): norm/length of the quaternion. */
 function qnorm(q){return Math.hypot(q[0],q[1],q[2],q[3])}
+/* Support (eq. (3) constraint): renormalize to unit length, as required after
+   noise injection and after each integration step. */
 function qnormz(q){const n=qnorm(q);return n<1e-15?[1,0,0,0]:q.map(v=>v/n)}
+/* Eq. (5): inverse q^-1 = q* / ||q||^2 — equals the conjugate for unit quaternions. */
 function qinv(q){const n2=q[0]*q[0]+q[1]*q[1]+q[2]*q[2]+q[3]*q[3];if(n2<1e-15)return[1,0,0,0];return qconj(q).map(v=>v/n2)}
 
+/* Eq. (8): the sandwich product w = q (x) [0,v] (x) q* rotates a vector; evaluating
+   it on the x, y, z basis vectors expands column-by-column into the DCM entries below.
+   Paper Eqs. (9)-(13): active DCM, R(q) v — rows/cols are eqs. (9)-(11) stacked per
+   eq. (12); the transpose (eq. 13) rotates the frame instead of the point. */
 /* Paper Eqs. (9)-(13): active DCM, R(q) v */
 function q2R(q){const[q0,q1,q2,q3]=q;return[
   [q0*q0+q1*q1-q2*q2-q3*q3, 2*(q1*q2-q0*q3), 2*(q1*q3+q0*q2)],
@@ -128,6 +162,7 @@ function Rv(R,v){return[
 /* Paper Eq. (14) */
 function axang2q(axis,ang){const n=Math.hypot(axis[0],axis[1],axis[2])||1;const u=axis.map(v=>v/n),h=ang/2,s=Math.sin(h);return[Math.cos(h),u[0]*s,u[1]*s,u[2]*s]}
 
+/* Eq. (15): Euler (ZYX: roll phi, pitch theta, yaw psi) -> quaternion. */
 /* Paper Eqs. (15)-(16), ZYX convention */
 function euler2q(ph,th,ps){const a=ph/2,b=th/2,c=ps/2,cp=Math.cos(a),sp=Math.sin(a),ct=Math.cos(b),st=Math.sin(b),cy=Math.cos(c),sy=Math.sin(c);return[
  cp*ct*cy+sp*st*sy,
@@ -135,6 +170,9 @@ function euler2q(ph,th,ps){const a=ph/2,b=th/2,c=ps/2,cp=Math.cos(a),sp=Math.sin
  cp*st*cy+sp*ct*sy,
  cp*ct*sy-sp*st*cy
 ]}
+/* Eq. (16): quaternion -> Euler (phi, theta, psi) via atan2/arcsin.
+   PLOTTING/LOGGING ONLY — never used inside the control loop; the loop itself
+   operates entirely on quaternions, which is the whole point of the paper. */
 function q2euler(q){const[q0,q1,q2,q3]=q;return[
  Math.atan2(2*(q0*q1+q2*q3),q0*q0-q1*q1-q2*q2+q3*q3),
  Math.asin(Math.max(-1,Math.min(1,2*(q0*q2-q3*q1)))),
@@ -142,6 +180,8 @@ function q2euler(q){const[q0,q1,q2,q3]=q;return[
 ]}
 
 /* ========================== Paper Eq. (18) ========================== */
+/* Paper Section V, CAD-derived inertia (the I_cm of eq. (17)), kg*m^2:
+   Ixx = Iyy = 6.5e-4, Izz = 1.2e-3. */
 const IXX=6.5e-4,IYY=6.5e-4,IZZ=1.2e-3;
 /* The rate-feedback term -Pw*omega and the plant's inertia set a fast real
    closed-loop pole at magnitude ~Pw/Imin. A FIXED integration step that is safe
@@ -150,6 +190,9 @@ const IXX=6.5e-4,IYY=6.5e-4,IZZ=1.2e-3;
    so a fixed dt would make the loop chatter/diverge exactly the way a too-slow
    digital control-tick rate does on real hardware. This recomputes a stable dt
    from the CURRENT gain every frame instead of hardcoding one. */
+/* Discrete-stability requirement on the physics/control tick — the browser analogue
+   of the control-rate bound derived in the Python reproduction (REPORT.md eq. (26)):
+   f >= Pw / (margin * I_min). */
 function stableDt(Pw,margin){
   const Imin=Math.min(IXX,IYY,IZZ);
   const fast=Math.max(Pw,0.05)/Imin;
@@ -157,12 +200,13 @@ function stableDt(Pw,margin){
 }
 function deriv(s,tau){
  const q=s.slice(0,4),wx=s[4],wy=s[5],wz=s[6];
- const pd=qmul([0,wx,wy,wz],q);
+ const pd=qmul([0,wx,wy,wz],q);              // [0,omega] (x) q — eq. (7)'s product shape, with eq. (18)'s literal sign below
  const iwx=IXX*wx,iwy=IYY*wy,iwz=IZZ*wz;
- const cx=wy*iwz-wz*iwy,cy=wz*iwx-wx*iwz,cz=wx*iwy-wy*iwx;
- return[-0.5*pd[0],-0.5*pd[1],-0.5*pd[2],-0.5*pd[3],
-   (tau[0]-cx)/IXX,(tau[1]-cy)/IYY,(tau[2]-cz)/IZZ];
+ const cx=wy*iwz-wz*iwy,cy=wz*iwx-wx*iwz,cz=wx*iwy-wy*iwx;   // omega x (I*omega): gyroscopic coupling term of eqs. (17)-(18)
+ return[-0.5*pd[0],-0.5*pd[1],-0.5*pd[2],-0.5*pd[3],          // eq. (18), first half:  qdot = -1/2 [0,omega] (x) q   (NOTE the leading minus — the paper's own sign, opposite of eq. (7))
+   (tau[0]-cx)/IXX,(tau[1]-cy)/IYY,(tau[2]-cz)/IZZ];         // eq. (18), second half: omegadot = I^-1 (tau - omega x (I omega))  (rotational half of eq. (17))
 }
+/* Classic explicit 4-stage Runge-Kutta integrator (numerics only — not a paper equation). */
 function rk4(s,tau,dt){
  const k1=deriv(s,tau),s2=s.map((v,i)=>v+dt*k1[i]/2),k2=deriv(s2,tau),s3=s.map((v,i)=>v+dt*k2[i]/2),k3=deriv(s3,tau),s4=s.map((v,i)=>v+dt*k3[i]),k4=deriv(s4,tau);
  return s.map((v,i)=>v+dt*(k1[i]+2*k2[i]+2*k3[i]+k4[i])/6);
@@ -170,12 +214,16 @@ function rk4(s,tau,dt){
 
 /* ========================== Controller Eqs. (19)-(21) ========================== */
 function torque(qref,qm,om,Pq,Pw,shortest){
- const qerr=qmul(qref,qconj(qm));let a=[qerr[1],qerr[2],qerr[3]];
- if(shortest&&qerr[0]<0)a=a.map(v=>-v);
- return[-Pq*a[0]-Pw*om[0],-Pq*a[1]-Pw*om[1],-Pq*a[2]-Pw*om[2]];
+ const qerr=qmul(qref,qconj(qm));let a=[qerr[1],qerr[2],qerr[3]];   // eq. (19): q_err = q_ref (x) q_m*  ;  eq. (20): Axis_err = [q_err1, q_err2, q_err3]
+ if(shortest&&qerr[0]<0)a=a.map(v=>-v);   // shortest-path sign correction on eq. (20)'s Axis_err (DISABLED for the 360-deg flip so the controller commits to the full rotation)
+ return[-Pq*a[0]-Pw*om[0],-Pq*a[1]-Pw*om[1],-Pq*a[2]-Pw*om[2]];   // eq. (21): tau = -Pq*Axis_err - Pw*omega_m  (paper defaults Pq=20, Pw=4)
 }
 
 /* ========================== Deterministic bounded zero-mean noise ========================== */
+/* Paper Section V measurement model: additive zero-mean noise of amplitude 0.1 on the
+   measured quaternion (renormalized after injection) and on the measured body rates.
+   The paper does not state a distribution; a bounded uniform realization is used for
+   reproducibility (documented assumption). */
 let rngState=2013;
 function seedRng(x){rngState=(x>>>0)||2013}
 function rng(){let t=rngState+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}
@@ -193,6 +241,8 @@ const HMAX=1200,H={t:[],ph:[],th:[],ps:[],rph:[],rth:[],rps:[],tx:[],ty:[],tz:[]
 function clearHistory(){for(const k of Object.keys(H))H[k].length=0}
 function reset(){state=[1,0,0,0,0,0,0];simT=0;accumulator=0;lastTau=[0,0,0];lastQref=[1,0,0,0];sat=[false,false,false];clearHistory();lastTs=0;seedRng(Number(ui.seed.value)||2013);paused=false;$('pause').textContent='Pause';if(typeof controlLimiter!=='undefined'){controlLimiter.Pq.value=Number(ui.Pq.value);controlLimiter.Pw.value=Number(ui.Pw.value);controlLimiter.noise.value=Number(ui.noise.value);controlLimiter.tmax.value=Number(ui.tmax.value)}}
 
+/* Scenario reference generators (paper Figs. 3-8), all built through eqs. (14)-(15)
+   so q_ref is always a valid unit quaternion. */
 function getRef(t){
  if(mode==='manual')return euler2q(Number(ui.phi.value),Number(ui.theta.value),Number(ui.psi.value));
  if(mode==='step'){
@@ -234,6 +284,9 @@ function updateLimitedControls(dt){
 function effectiveControls(){
   return {Pq:controlLimiter.Pq.value,Pw:controlLimiter.Pw.value,noise:controlLimiter.noise.value,tmax:controlLimiter.tmax.value};
 }
+/* One control tick, in paper order: reference (Figs. 3-8) -> noisy measurement
+   (Section V noise model) -> P^2 torque (eqs. 19-21) -> +/-tau_max saturation
+   (Section V bound) -> eq. (18) plant RK4 step -> renormalize (eq. (3)). */
 function substep(dt){
  const c=effectiveControls(),Pq=c.Pq,Pw=c.Pw,na=c.noise,tmax=c.tmax;
  lastQref=qnormz(getRef(simT));
