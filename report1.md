@@ -295,9 +295,9 @@ $$
 $$
 \begin{bmatrix}\phi\\\theta\\\psi\end{bmatrix} =
 \begin{bmatrix}
-\operatorname{atan2}\!\big(2(q_0q_1+q_2q_3),\, q_0^2-q_1^2-q_2^2+q_3^2\big)\\
+\mathrm{atan2}\!\big(2(q_0q_1+q_2q_3),\, q_0^2-q_1^2-q_2^2+q_3^2\big)\\
 \arcsin\!\big(2(q_0q_2-q_3q_1)\big)\\
-\operatorname{atan2}\!\big(2(q_0q_3+q_1q_2),\, q_0^2+q_1^2-q_2^2-q_3^2\big)
+\mathrm{atan2}\!\big(2(q_0q_3+q_1q_2),\, q_0^2+q_1^2-q_2^2-q_3^2\big)
 \end{bmatrix}
 $$
 
