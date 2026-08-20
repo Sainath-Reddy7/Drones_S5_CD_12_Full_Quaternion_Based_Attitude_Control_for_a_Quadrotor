@@ -2,8 +2,23 @@
 
 ## Launch
 
+**Recommended:**
+
 ```bash
-python -m pysitl.run --gcs
+bash run_gcs.sh          # default port 8765
+bash run_gcs.sh 8080      # custom port
+```
+
+This picks whichever Python interpreter on the machine actually has
+`numpy`/`pandas`/`matplotlib` installed (some Macs have several interpreters
+and only one with the right packages), refuses to start if the port is
+already occupied by a stale server, and opens the dashboard in the default
+browser automatically.
+
+**Manual (if you already know your interpreter has the dependencies):**
+
+```bash
+python3 -m pysitl.run --gcs
 ```
 
 Opens the server at `http://127.0.0.1:8765` (add `--port N` to change it, `--host`
@@ -63,7 +78,20 @@ documented in `REPORT.md`.
   motors orange, rear cyan). Dashed amber outline = the current attitude
   reference — the gap between the two is the tracking error, live.
 - Props spin at a rate proportional to actual commanded rotor thrust.
+- **Coordinate axes** — two labeled triads are drawn so you can read
+  orientation/position directly off the viewport instead of only the charts:
+  - **World axes (dashed, faint, fixed at the origin)** — `X`/`Y`/`Z`, NED
+    convention: X = north, Y = east, Z = down. These never move; they are
+    your fixed reference frame.
+  - **Body axes (solid, bright, attached to the vehicle)** — lowercase
+    `x`/`y`/`z`, same red/green/blue coloring, rigidly attached to the
+    airframe and rotating with it. Comparing the tilt of the solid body
+    triad against the dashed world triad is a direct visual read of the
+    current attitude, independent of the charts.
 - HUD (top corners): flight mode, control-tick rate, current/target altitude,
+  live **POS** readout (`N <north> E <east>`, meters, world frame — this is
+  where the vehicle has actually translated to, useful in AUTO scenarios
+  since they only hold attitude/altitude and never correct drift), and
   simulation time.
 - Below the viewport: three saturation LEDs (Mx/My/Mz) — light up red when
   that axis's torque command is hitting the ±4 N·m clip.
@@ -118,3 +146,11 @@ telemetry refresh is coarser. See `run.py:_physics_loop` for the measurements.
   the page.
 - **Buttons feel laggy** — shouldn't happen; a stale build might not have the
   HTTP keep-alive fix. Pull latest and restart the server.
+- **`ModuleNotFoundError: No module named 'numpy'`** — the `python3` on your
+  `PATH` doesn't have the project's dependencies. Use `bash run_gcs.sh`
+  instead of calling `pysitl.run` directly; it searches known interpreter
+  locations for one that has `numpy`/`pandas`/`matplotlib` and uses that.
+- **`Port 8765 is already in use`** — `run_gcs.sh` refuses to start rather
+  than fail confusingly later. A previous server is likely still running;
+  stop it with `lsof -ti tcp:8765 | xargs kill`, or launch on a different
+  port with `bash run_gcs.sh 8080`.
