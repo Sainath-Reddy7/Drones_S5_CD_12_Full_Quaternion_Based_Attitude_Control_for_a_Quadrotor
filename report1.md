@@ -1,8 +1,6 @@
-<div align="center">
-  <figure>
-    <img src="Misc/Images/Amritalogo.png" alt="AmritaLogo" width="500"> <br>
-  </figure>
-</div>
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/060f7774-a73f-4132-9413-36887ed09cfa" alt="AmritaLogo" width="500">
+</p>
 
 # CD12_Full_Quaternion_Based_Attitude_Control_for_a_Quadrotor
 
@@ -348,8 +346,10 @@ The leading **minus** sign on $\dot q$ is not a typo — it is the paper's own p
 The control-signal-to-torque relation is modelled as the identity, exactly as the paper simplifies it. The paper's simulation parameters are the Luleå University CAD-derived inertia:
 
 $$
-I_{xx}=I_{yy}=6.5\times10^{-4}\ \mathrm{kg\,m^2},\qquad
-I_{zz}=1.2\times10^{-3}\ \mathrm{kg\,m^2}
+\begin{aligned}
+I_{xx}=I_{yy}&=6.5\times10^{-4}\ \mathrm{kg\,m^2}\\
+I_{zz}&=1.2\times10^{-3}\ \mathrm{kg\,m^2}
+\end{aligned}
 $$
 
 ---
