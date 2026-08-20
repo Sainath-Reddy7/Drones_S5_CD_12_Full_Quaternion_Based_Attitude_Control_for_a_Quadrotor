@@ -35,9 +35,9 @@ Each scenario script writes a timestamped CSV + PNG figures to `results/`.
 
 `python -m quat_sitl.visualize3d` replays a logged scenario as a 3D animated
 quadrotor (arms, spinning rotors, RGB body axes) alongside attitude-tracking
-and torque plots matching the paper's Figures 3–8. For a live, interactively
-flyable simulation (not just a replay) backed by real running physics, see
-the `pysitl/` package's browser dashboard (`python -m pysitl.run --gcs`).
+and torque plots matching the paper's Figures 3–8. For an interactive,
+zero-install browser simulation of the same attitude-only model, open the
+standalone `fresk_nikolakopoulos_precise_attitude_simulator_xyz_labels(1).html`.
 
 ## Equation → function map
 

@@ -1,4 +1,4 @@
-# Full Quaternion Based Attitude Control for a Quadrotor: A Python Software-In-The-Loop Reproduction, Stability Analysis, and 6-DOF Extension
+# Full Quaternion Based Attitude Control for a Quadrotor: A Python Software-In-The-Loop Reproduction and Stability Analysis
 
 ## Abstract
 
@@ -10,17 +10,12 @@ loop. Every equation in the paper (1)–(21) is implemented function-for-functio
 and verified by a seven-test suite, including a literal preservation of the
 paper's own sign convention on the rotational kinematics (eq. 18), which
 differs from the general body-frame quaternion derivative (eq. 7). Beyond
-reproduction, this work makes two original contributions. First, a rigorous
+reproduction, this work makes one original contribution: a rigorous
 discrete-time stability analysis shows that the paper's own tuned gains
 ($P_q=20$, $P_\omega=4$) combined with its published inertia produce a fast
 closed-loop pole that a naively chosen digital control rate (200 Hz–1 kHz)
 samples unstably — a genuine numerical finding, not assumed, derived from the
 exact zero-order-hold discretization and confirmed against simulation.
-Second, the attitude-only controller is extended, unmodified, into a full
-6-DOF flight-dynamics simulator with a PX4-style architecture (message bus,
-multi-rate scheduler, control allocation, arming/failsafe logic, and a
-browser-based ground station), with vehicle mass and geometry *derived*
-algebraically from the paper's own published inertia rather than assumed.
 All three of the paper's benchmark scenarios — step, sinusoidal tracking, and
 360° flip — are reproduced quantitatively and qualitatively, including the
 absence of any gimbal-lock artifact through the full-rotation flip, matching
@@ -69,11 +64,6 @@ the absence of singularities through a full rotation.
    digital SITL sample rate for the paper's own gains and inertia is not a
    free choice — it is bounded below by a concrete, derived number — and
    documents the exact analysis (§4.5).
-3. **A 6-DOF PX4-style extension** that flies the *same, unmodified*
-   attitude controller on a real rigid-body vehicle (rotors, mixer, gravity,
-   ground contact) rather than an attitude-only kinematic model, with vehicle
-   mass and geometry derived — not assumed — from the paper's published
-   inertia (§4.6).
 
 ## 2. Methodology
 
@@ -378,77 +368,7 @@ $$
 
 This project's simulator (`quat_sitl/dynamics.py:stable_control_rate_hz`)
 computes eq. (26) directly from whatever gains and inertia are configured,
-and the scheduler in the 6-DOF extension refuses to run below it (§2.6)
 rather than silently producing an unconverging simulation.
-
-### 2.6 6-DOF Extension: Vehicle Derivation, Rotor Model, and Allocation
-
-The paper is attitude-only and never requires vehicle mass or geometry,
-since it treats control-signal-to-torque as the identity. Flying a real
-6-DOF rigid body requires both, so they are *derived* from the paper's own
-published inertia rather than chosen freely. The ratio
-$I_{zz}/I_{xx}=1.846$ is close to the value of exactly $2$ predicted by a
-planar-X point-mass quadrotor, in which four rotor point masses at arm
-length $L$ contribute
-
-$$
-\begin{aligned}
-I_{xx}^{rotors} = I_{yy}^{rotors} &= 4 m_r d^2 \\
-I_{zz}^{rotors} &= 8 m_r d^2 \\
-d &= \frac{L}{\sqrt2}
-\end{aligned}
-$$
-
-*(Eq. 27)*
-
-so that, adding an isotropic central-body inertia $I_b$,
-
-$$
-\begin{aligned}
-m_r &= \frac{I_{zz}-I_{xx}}{2L^2} \\
-I_b &= 2I_{xx}-I_{zz}
-\end{aligned}
-$$
-
-*(Eq. 28)*
-
-With $L=0.15\,\mathrm m$, this gives $m_r\approx12.2\,\mathrm g$ per rotor
-and, with an assumed $150\,\mathrm g$ central body,
-total mass $m\approx200\,\mathrm g$ and hover thrust $\approx1.95\,\mathrm N$.
-Each rotor produces thrust $T_i \ge 0$ along body $-z$ and a reaction torque
-proportional to thrust; the forward (rotor-thrusts-to-wrench) mixer is
-
-$$
-\begin{aligned}
-F_z &=-\sum_i T_i \\
-\tau_x &=-d(T_1-T_2-T_3+T_4) \\
-\tau_y &=d(T_1-T_2+T_3-T_4) \\
-\tau_z &=c(T_1+T_2-T_3-T_4)
-\end{aligned}
-$$
-
-*(Eq. 29)*
-
-with $c$ the yaw reaction coefficient. Inverting eq. (29) to allocate a
-commanded thrust and torque to four non-negative, bounded rotor thrusts
-requires care: naively clipping each rotor independently after solving for
-it changes the *total* thrust whenever the torque demand saturates (measured
-in this project to double total thrust and send simulated altitude to
-$154\,\mathrm m$ from a single $0.3\,\mathrm{rad}$ roll command). The
-correct allocation holds the common-mode thrust fixed and scales only the
-zero-sum torque-driven deltas by the largest factor $s\in[0,1]$ that keeps
-every rotor within $[0,T_{max}]$:
-
-$$
-\begin{aligned}
-T_i &= \frac{T_c}{4} + s\,D_i, \qquad \sum_i D_i = 0 \\
-s &=\min_i\big\{1,\ \text{feasible bound from } D_i\big\}
-\end{aligned}
-$$
-
-*(Eq. 30)*
-
-which preserves $\sum_i T_i = T_c$ exactly, for any $s$.
 
 ## 3. Results
 
@@ -560,20 +480,10 @@ sign) is preserved exactly instead (§4.4).
 | Suite | Tests | Coverage |
 |---|---|---|
 | `tests/test_quaternion.py` | 7 | Non-commutativity, identity, DCM orthonormality/round-trip, rotation consistency, 10 s norm-drift bound, zero-input fixed point, closed-loop sign-consistency |
-| `tests/test_sitl.py` | 20 | Body↔world frame convention, eq. 18 numerical parity, hover equilibrium, ground contact, mixer round-trip, thrust-preserving desaturation (regression for the 154 m runaway, §2.6), noise bounds, closed-loop tracking under full paper noise, scheduler rate-rejection and determinism, arming/failsafe, message-bus semantics, full-rotation flip completion |
 
-**Table 4.** 27/27 tests pass. The frame-convention and desaturation tests
-are direct regressions for issues discovered and fixed during development,
-not tests written to a pre-known-correct implementation.
-
-### 3.5 6-DOF Closed-Loop Validation
-
-Flying the *unmodified* `NonlinearP2Controller` on the derived 6-DOF vehicle
-(§2.6), with the paper's full $0.1$ measurement noise active, a commanded
-$0.3\,\mathrm{rad}$ roll converges to $0.309\,\mathrm{rad}$ while holding
-commanded altitude to within a few centimeters — the same controller, same
-gains, same noise model, now driving real rotor thrust through the mixer
-rather than an idealized identity torque relation.
+**Table 4.** 7/7 tests pass, covering the algebraic properties of eqs. (1)–(16)
+and the negative-feedback consistency of the eq. (18) plant under the eq. (21)
+controller.
 
 ## 4. Discussion
 
@@ -622,31 +532,26 @@ implementation detail: a naive, plausible-looking digital SITL design point
 published gains and inertia, and the reason is a specific, derivable fast
 pole rather than a general "use a faster rate" heuristic.
 
-### 4.6 Limitations of the 6-DOF Extension
+### 4.6 Limitations
 
-The 6-DOF plant has no aerodynamic drag beyond a simple linear term, no
-ground-effect model, and no motor/ESC nonlinearity beyond a first-order lag
-— the paper's own quoted simulation results were produced on a more detailed
-nonlinear model (its reference [10]) not fully specified in the paper text.
-Vehicle mass and the central-body inertia split (§2.6) are derived exactly
-from the two published inertia values but require one physically-reasonable
-but unverifiable assumption (a $150\,\mathrm g$ central body), documented as
-such rather than presented as a measured quantity.
+The plant (eq. 17–18) has no aerodynamic drag or damping terms — the paper's
+own quoted simulation results were produced on a more detailed nonlinear
+model (its reference [10]) not fully specified in the paper text, so this
+project implements exactly the simplified equations the paper states
+explicitly, rather than inventing missing aerodynamic terms.
 
 ## 5. Conclusion
 
 This work reproduces every equation of Fresk and Nikolakopoulos's full
 quaternion attitude controller [1] exactly, validates the reproduction
-against a 27-test suite and against the paper's own three benchmark
+against a 7-test suite and against the paper's own three benchmark
 scenarios both quantitatively and qualitatively, and documents every point
 at which the paper under-specifies a parameter rather than silently choosing
 one. Beyond reproduction, a rigorous discrete-time stability analysis
 uncovers and resolves a genuine numerical requirement on the digital control
-rate that the paper's continuous-style results do not surface, and the
-controller — completely unmodified — is shown to fly a real, physically
-derived 6-DOF vehicle through a PX4-style simulation architecture, closing
+rate that the paper's continuous-style results do not surface, closing
 the gap between "quaternion attitude control avoids gimbal lock in theory"
-and a running, testable, interactively flyable demonstration of that claim.
+and a running, testable demonstration of that claim.
 
 ## References
 
@@ -670,13 +575,7 @@ pp. 153–158.
 Aircraft," *IEEE Transactions on Control Systems Technology*, vol. 14, no. 3,
 pp. 562–571, 2006.
 
-[6] PX4 Development Team, *PX4 Autopilot User Guide* — architecture
-reference for the multi-rate scheduler, uORB message-bus pattern, and
-commander/arming model used in the 6-DOF extension:
-[docs.px4.io](https://docs.px4.io/).
-
-[7] This repository: implementation, test suite, and all figures in this
-report — `quat_sitl/` (paper reproduction) and `pysitl/` (6-DOF PX4-style
-extension), with an equation-to-function map and additional
-implementation notes in [`README.md`](README.md) and
-[`pysitl/README.md`](pysitl/README.md).
+[6] This repository: implementation, test suite, and all figures in this
+report — `quat_sitl/` (paper reproduction) and the standalone browser
+simulator, with an equation-to-function map and additional implementation
+notes in [`README.md`](README.md).
