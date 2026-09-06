@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cross-Simulator Results — Quaternion Attitude Control for a Quadrotor</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, sans-serif; margin: 0; background: #f6f8fa; color: #1f2328; }
+  header { background: #1f2328; color: #fff; padding: 28px 24px; }
+  header h1 { margin: 0 0 6px; font-size: 22px; }
+  header p { margin: 0; color: #b6bcc2; font-size: 14px; }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  th, td { border: 1px solid #d8dee4; padding: 6px 10px; text-align: right; }
+  th { background: #eef1f4; }
+  th:nth-child(1), th:nth-child(2), td:nth-child(1), td:nth-child(2) { text-align: left; }
+  h2 { font-size: 18px; margin: 32px 0 12px; }
+  .figs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .figs figure { margin: 0; background: #fff; padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .figs img { width: 100%; }
+  figcaption { font-size: 12px; color: #57606a; padding-top: 6px; }
+  .note { background: #fff8c5; border: 1px solid #d4a72c; border-radius: 6px; padding: 12px 16px; font-size: 14px; }
+  a { color: #0969da; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cross-Simulator Results — Full Quaternion-Based Attitude Control for a Quadrotor</h1>
+  <p>Fresk &amp; Nikolakopoulos (ECC 2013) controller, gains frozen (P&#8347;=20, P&#969;=4, &plusmn;4 N&middot;m), flying the same paper vehicle on two independent physics engines &middot; Group 12, Amrita Vishwa Vidyapeetham</p>
+</header>
+<main>
+
+<p class="note"><b>Headline:</b> with identical gains, references, and the paper's &plusmn;0.1 noise model, step and sine tracking agree across engines to within 0.2&deg; RMS (17.7&deg; MuJoCo vs 17.7&deg; PyBullet) — the loop belongs to the controller, not the engine. The 360&deg; flip completes deterministically on MuJoCo (airborne, 3 seeds) and hits an engine-dependent limit cycle on PyBullet — analyzed in the repo (P&sup2; pursuit equilibrium, Eq. 33).</p>
+
+<h2>Benchmark — all runs (seeds 0&ndash;2 for flips)</h2>
+<table>
+<tr><th>simulator</th><th>scenario</th><th>RMS att. err [deg]</th><th>max att. err [deg]</th><th>settle &phi; [s]</th><th>settle &theta; [s]</th><th>settle &psi; [s]</th><th>torque sat.</th><th>drift [m]</th><th>duration [s]</th></tr>
+<tr><td>gym_pybullet</td><td>flip</td><td style="color:#cf222e;font-weight:600">115.19</td><td>179.88</td><td>5.00</td><td>5.00</td><td>5.00</td><td>0.79</td><td>28.19</td><td>5.00</td></tr>
+<tr><td>gym_pybullet</td><td>flip</td><td style="color:#cf222e;font-weight:600">113.82</td><td>179.88</td><td>5.00</td><td>4.47</td><td>5.00</td><td>0.79</td><td>29.11</td><td>5.00</td></tr>
+<tr><td>gym_pybullet</td><td>flip</td><td style="color:#cf222e;font-weight:600">115.72</td><td>179.91</td><td>5.00</td><td>4.70</td><td>5.00</td><td>0.79</td><td>29.05</td><td>5.00</td></tr>
+<tr><td>gym_pybullet</td><td>sine</td><td style="color:#1a7f37;font-weight:600">17.52</td><td>41.17</td><td>12.47</td><td>8.65</td><td>5.85</td><td>0.01</td><td>105.39</td><td>15.00</td></tr>
+<tr><td>gym_pybullet</td><td>step</td><td style="color:#1a7f37;font-weight:600">17.68</td><td>70.74</td><td>13.97</td><td>0.87</td><td>6.00</td><td>0.02</td><td>1275.92</td><td>15.00</td></tr>
+<tr><td>gym_pybullet</td><td>step</td><td style="color:#1a7f37;font-weight:600">17.58</td><td>71.84</td><td>14.00</td><td>0.83</td><td>6.00</td><td>0.02</td><td>1276.38</td><td>15.00</td></tr>
+<tr><td>mujoco</td><td>flip</td><td style="color:#9a6700;font-weight:600">44.39</td><td>91.91</td><td>2.88</td><td>0.00</td><td>0.00</td><td>0.01</td><td>54.40</td><td>5.00</td></tr>
+<tr><td>mujoco</td><td>flip</td><td style="color:#9a6700;font-weight:600">44.55</td><td>91.32</td><td>2.97</td><td>0.00</td><td>0.00</td><td>0.01</td><td>54.43</td><td>5.00</td></tr>
+<tr><td>mujoco</td><td>flip</td><td style="color:#9a6700;font-weight:600">44.51</td><td>90.91</td><td>2.95</td><td>0.00</td><td>0.00</td><td>0.01</td><td>54.52</td><td>5.00</td></tr>
+<tr><td>mujoco</td><td>sine</td><td style="color:#1a7f37;font-weight:600">17.61</td><td>41.10</td><td>12.47</td><td>8.65</td><td>5.82</td><td>0.01</td><td>105.66</td><td>15.00</td></tr>
+<tr><td>mujoco</td><td>step</td><td style="color:#1a7f37;font-weight:600">17.71</td><td>71.18</td><td>13.97</td><td>0.86</td><td>6.00</td><td>0.02</td><td>1864.86</td><td>15.00</td></tr>
+<tr><td>mujoco</td><td>step</td><td style="color:#1a7f37;font-weight:600">17.66</td><td>72.92</td><td>14.00</td><td>0.83</td><td>6.00</td><td>0.02</td><td>1875.99</td><td>15.00</td></tr>
+</table>
+
+<h2>MuJoCo — the paper's three scenarios (frozen controller, full noise)</h2>
+<div class="figs">
+<figure><img src="figures/mujoco_step_attitude.png" alt=""><figcaption>Step: 1 rad on &phi;,&theta;,&psi; staggered at t=1,5,9 s — reference dashed vs measured.</figcaption></figure>
+<figure><img src="figures/mujoco_step_torque.png" alt=""><figcaption>Step torque, briefly saturating at each step onset (paper Fig. 4).</figcaption></figure>
+<figure><img src="figures/mujoco_sine_attitude.png" alt=""><figcaption>Sine: 0.5 rad, 1 rad/s, phase-shifted (paper Figs. 5&ndash;6).</figcaption></figure>
+<figure><img src="figures/mujoco_flip_attitude.png" alt=""><figcaption>360&deg; flip: completes airborne, no gimbal-lock artifact.</figcaption></figure>
+</div>
+
+<h2>gym-pybullet-drones — same controller, same references</h2>
+<div class="figs">
+<figure><img src="figures/gym_step_attitude.png" alt=""><figcaption>Step tracking — statistically identical to MuJoCo.</figcaption></figure>
+<figure><img src="figures/gym_step_torque.png" alt=""><figcaption>Step torque — cross-engine agreement to within 0.2&deg; RMS.</figcaption></figure>
+<figure><img src="figures/gym_sine_attitude.png" alt=""><figcaption>Sine tracking.</figcaption></figure>
+<figure><img src="figures/gym_flip_attitude.png" alt=""><figcaption>Flip: engine-dependent limit cycle (documented finding #4).</figcaption></figure>
+</div>
+
+<h2>Where this comes from</h2>
+<p style="font-size:14px">Every number and figure above is generated by <code>sim/run_all.sh</code> + <code>python -m sim.compare</code> in the repository — no hand-edited values. Source: <a href="https://github.com/Sainath-Reddy7/Drones_S5_CD_12_Full_Quaternion_Based_Attitude_Control_for_a_Quadrotor/tree/sainath/sim-deployment">sainath/sim-deployment branch</a>. Interactive simulator of the paper's core loop: <a href="/">quadrotor-quaternion-sim.vercel.app</a>.</p>
+
+</main>
+</body>
+</html>
