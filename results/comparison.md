@@ -8,8 +8,8 @@ duration. settle_* use the noise-aware band (max(5%, 2*noise)) on the
 | simulator | scenario | RMS att. err [deg] | max att. err [deg] | settle phi [s] | settle theta [s] | settle psi [s] | torque sat. [-] | drift [m] | duration [s] |
 |---|---|---|---|---|---|---|---|---|---|
 | gym_pybullet | flip | 115.19 | 179.88 | 5.00 | 5.00 | 5.00 | 0.79 | 28.19 | 5.00 |
-| gym_pybullet | flip | 109.34 | 179.88 | 5.00 | 5.00 | 5.00 | 0.60 | 36.21 | 5.00 |
-| gym_pybullet | flip | 133.97 | 179.98 | 5.00 | 3.88 | 5.00 | 0.79 | 24.95 | 5.00 |
+| gym_pybullet | flip | 113.82 | 179.88 | 5.00 | 4.47 | 5.00 | 0.79 | 29.11 | 5.00 |
+| gym_pybullet | flip | 115.72 | 179.91 | 5.00 | 4.70 | 5.00 | 0.79 | 29.05 | 5.00 |
 | gym_pybullet | sine | 17.52 | 41.17 | 12.47 | 8.65 | 5.85 | 0.01 | 105.39 | 15.00 |
 | gym_pybullet | step | 17.68 | 70.74 | 13.97 | 0.87 | 6.00 | 0.02 | 1275.92 | 15.00 |
 | gym_pybullet | step | 17.58 | 71.84 | 14.00 | 0.83 | 6.00 | 0.02 | 1276.38 | 15.00 |
