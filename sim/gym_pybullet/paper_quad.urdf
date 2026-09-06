@@ -1,0 +1,108 @@
+<?xml version="1.0" ?>
+
+<!-- The paper vehicle as a gym-pybullet-drones asset: same derived airframe
+     the MuJoCo MJCF and pysitl encode (0.2 kg, paper inertia Ixx=Iyy=6.5e-4,
+     Izz=1.2e-3 kg*m^2, tip-to-center arm 0.15 m => rotor offsets
+     (+-0.106066, +-0.106066), T/W = 4).
+
+     Structure mirrors assets/cf2x.urdf exactly because BaseAviary parses it
+     positionally (_parseURDFParameters: URDF_TREE[1][0][1] must be <mass>,
+     [1][0][2] <inertia>, [1][2][1][0] the collision cylinder) and _physics
+     applies per-rotor forces to child links 0-3 and yaw torque to link 4:
+
+       prop0 (+d,-d) front-right   yaw reaction -z
+       prop1 (-d,-d) rear-right    yaw reaction +z
+       prop2 (-d,+d) rear-left     yaw reaction -z
+       prop3 (+d,+d) front-left    yaw reaction +z
+
+     kf chosen so hover sits near 12.8k RPM and max near 25.5k (CF2-like);
+     km = 0.016 * kf (pysitl's yaw-reaction ratio). -->
+
+<robot name="paper_quad">
+
+  <properties arm="0.15" kf="3.0e-9" km="4.8e-11" thrust2weight="4.0" max_speed_kmh="30" gnd_eff_coeff="11.36859" prop_radius="5.0e-2" drag_coeff_xy="9.1785e-7" drag_coeff_z="10.311e-7" dw_coeff_1="2267.18" dw_coeff_2=".16" dw_coeff_3="-.11" />
+
+  <link name="base_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.2"/>
+      <inertia ixx="6.5e-4" ixy="0.0" ixz="0.0" iyy="6.5e-4" iyz="0.0" izz="1.2e-3"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.17" length="0.01"/>
+      </geometry>
+      <material name="dark">
+        <color rgba=".25 .25 .28 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder radius=".17" length=".01"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="prop0_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.106066 -0.106066 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
+  <joint name="prop0_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="prop0_link"/>
+  </joint>
+
+  <link name="prop1_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.106066 -0.106066 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
+  <joint name="prop1_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="prop1_link"/>
+  </joint>
+
+  <link name="prop2_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.106066 0.106066 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
+  <joint name="prop2_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="prop2_link"/>
+  </joint>
+
+  <link name="prop3_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.106066 0.106066 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
+  <joint name="prop3_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="prop3_link"/>
+  </joint>
+
+  <link name="center_of_mass_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
+  <joint name="center_of_mass_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="center_of_mass_link"/>
+  </joint>
+
+</robot>

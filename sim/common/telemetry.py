@@ -90,25 +90,30 @@ class RunLog:
 
 
 def summarize(log: RunLog) -> dict:
-    """Cross-simulator metrics, computed identically for every stack.
+    """Cross-simulator metrics, computed identically for every stack."""
+    data = np.array(log.rows, dtype=np.float64)
+    return summarize_data(data, log.simulator, log.scenario, log.noise)
+
+
+def summarize_data(data: np.ndarray, simulator: str, scenario: str, noise: float = 0.1) -> dict:
+    """Metric core, shared by live runs (RunLog) and CSV replays (sim.compare).
 
     - rms_alpha_deg: RMS geodesic attitude error over the whole run
     - settle_{phi,theta,psi}_s: settling time of each Euler axis after its
-      reference's last discontinuity/ramp onset (5% band, sustained); None if
-      the axis never settles
+      reference's last discontinuity/ramp onset (noise-aware band, 0.5 s
+      smoothed); None if the axis never settles
     - sat_fraction: fraction of ticks with any torque axis saturated
     - final_pos_err_m: |position drift| at run end (attitude demos drift by
       design -- the paper controls attitude only -- but it is reported)
     """
-    data = np.array(log.rows, dtype=np.float64)
     t = data[:, 0]
     alpha = data[:, 1]
     # COLUMNS layout (0-based): 0 t, 1 alpha_err, 2-5 q_ref, 6-9 q_m,
     # 10-12 euler_ref, 13-15 euler_meas, 16-18 omega, 19-21 tau,
     # 22-24 sat flags, 25 thrust, 26 desat, 27-29 position
     out: dict = {
-        "simulator": log.simulator,
-        "scenario": log.scenario,
+        "simulator": simulator,
+        "scenario": scenario,
         "duration_s": float(t[-1]),
         "rms_alpha_deg": float(np.degrees(np.sqrt(np.mean(alpha**2)))),
         "max_alpha_deg": float(np.degrees(np.max(alpha))),
@@ -119,7 +124,7 @@ def summarize(log: RunLog) -> dict:
     # Settling per Euler axis: find the last time the tracking error leaves a
     # 5%-of-scale band, measured from the reference's last change onset.
     onsets = {"phi": 1.0, "theta": 5.0, "psi": 9.0}  # step staggering (refs.py)
-    if log.scenario == "flip":
+    if scenario == "flip":
         onsets = {"phi": 0.0, "theta": 0.0, "psi": 0.0}
     for i, axis in enumerate(("phi", "theta", "psi")):
         ref = data[:, 10 + i]
@@ -137,7 +142,7 @@ def summarize(log: RunLog) -> dict:
         # maps to a geodesic-angle floor of roughly 2*noise, so demanding a
         # 5% band inside that floor would report "never settles" under the
         # paper's own noise model
-        band = max(0.05 * amp, 2.0 * log.noise)
+        band = max(0.05 * amp, 2.0 * noise)
         onset = onsets[axis]
         mask = t >= onset
         t_a, e_a = t[mask], err_s[mask]

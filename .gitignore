@@ -10,3 +10,5 @@ build/
 dist/
 .venv310/
 .venv313/
+mmenv/
+micromamba.exe
