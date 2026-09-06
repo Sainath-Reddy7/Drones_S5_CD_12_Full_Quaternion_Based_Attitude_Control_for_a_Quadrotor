@@ -84,11 +84,13 @@ Benchmark table: `results/comparison.md` (regenerate with `python -m sim.compare
    rate equilibrium is ω = 5·sin(e/2): a 2 s ramp (π rad/s) is trackable
    only with lag ≈ 1.36 rad, the vehicle crosses 2π just after the
    reference, and completion depends on engine-level integration details.
-   Measured: MuJoCo completes deterministically (3 seeds: φ settles
-   2.44-2.47 s, 2% saturation); PyBullet enters a limit cycle near φ ≈ 2.1
-   rad and unwinds when the reference reaches identity (3 seeds: never
-   settles, 60-79% saturation). The ideal-plant reproduction (quat_sitl)
-   shows the paper's own smooth 2π tracking with no gimbal-lock artifact.
+   Measured fully airborne (spawn at the 60 m scenario altitude, dip to
+   ~40.5 m, recovery to ~54 m): MuJoCo completes deterministically across
+   seeds 0-2 (φ settles 2.87-2.97 s, 0.6% saturation, final error ≤ 0.29
+   rad); PyBullet enters a limit cycle near φ ≈ 2.1 rad and unwinds when
+   the reference reaches identity (3 seeds: never settles, 60-79%
+   saturation). The ideal-plant reproduction (quat_sitl) shows the paper's
+   own smooth 2π tracking with no gimbal-lock artifact.
 5. **The 12.3 kHz control-rate bound carries over.** Both native adapters
    step physics at 20-24 kHz with the controller in the loop every step and
    assert the derived minimum at startup, same as the pysitl scheduler.
@@ -98,7 +100,12 @@ Benchmark table: `results/comparison.md` (regenerate with `python -m sim.compare
    thrust; PyBullet's default 0.04 linear/angular damping is wrong for
    quadrotor airframes and eats flip momentum (the package ships the removal
    commented out); MuJoCo child bodies with default-density geoms silently
-   add mass to a "0.2 kg" vehicle (use massless sites for visuals).
+   add mass to a "0.2 kg" vehicle (use massless sites for visuals); and a
+   simulator's static spawn pose does not follow the scenario's reference
+   altitude — MuJoCo must be repositioned via `data.qpos[2]` (the gym API
+   takes `initial_xyzs`). Before that catch, the MuJoCo flip's "success" was
+   partly ground-assisted at 0.5 m; the numbers above are from fully
+   airborne runs.
 
 ## Conventions (for anyone adding a fifth stack)
 

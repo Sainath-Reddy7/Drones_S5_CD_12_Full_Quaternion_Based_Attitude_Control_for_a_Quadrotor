@@ -19,8 +19,10 @@ outer-loop attitude reference generator, exposing what a hardware port needs.
 The fast-pole/12.3 kHz bound does not bind here because ArduPilot's inner rate
 loop (>= 400 Hz on real rate targets, faster in SITL) closes the torque loop.
 
-Tested against: ArduCopter SITL, `sim_vehicle.py -v ArduCopter -f quad`, and
-the ardupilot_gazebo backend for the Gazebo item (sim/gazebo/README.md).
+Targets ArduCopter SITL (`sim_vehicle.py -v ArduCopter -f quad`) and the
+ardupilot_gazebo backend for the Gazebo item (sim/gazebo/README.md). Runtime
+validation requires the WSL2/Linux runbook; the state conventions it relies on
+are guarded machine-independently by tests/test_sim_bridge.py.
 
 Usage (SITL must already be running):
     python -m sim.ardupilot.bridge_node --scenario step --duration 15

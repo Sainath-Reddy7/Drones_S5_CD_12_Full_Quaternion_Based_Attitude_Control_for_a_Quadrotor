@@ -59,7 +59,7 @@ export GZ_SIM_RESOURCE_PATH=$HOME/ardupilot_gazebo/models:$HOME/ardupilot_gazebo
 
 ```bash
 # T1: Gazebo with the paper attitude world
-cd ~/drones && gz sim -v4 -r --iterations 0 sim/gazebo/worlds/paper_attitude.world
+cd ~/drones && gz sim -v4 -r sim/gazebo/worlds/paper_attitude.world
 
 # T2: ArduPilot SITL bound to Gazebo (frame name from the ardupilot_gazebo
 #     docs; check `sim_vehicle.py -v ArduCopter -f list | grep gazebo` if the

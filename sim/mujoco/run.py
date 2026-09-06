@@ -49,8 +49,10 @@ SENSOR_HZ = 1_000.0
 ALTITUDE_HZ = 250.0
 LOG_HZ = 1_000.0
 Z_REF = 0.5  # m, hover altitude for step/sine
-Z_REF_FLIP = 30.0  # m: a 2 s ramp flip spends ~1.4 s near-inverted with near-idle
-# thrust; measured free-fall bottom is ~3.9 m below start, so 5 m leaves margin.
+Z_REF_FLIP = 60.0  # m: the flip's ~2.9 s of near-idle collective free-falls the
+# vehicle ~19.5 m (measured, seeds 0-2: dip to 40.5-40.6 m) before the
+# attitude loop recovers and altitude hold climbs back; 60 m keeps the
+# maneuver fully airborne with ~40 m of clearance.
 IDLE_FRACTION = 0.1  # collective = 10% of hover while tilt_cos < 0.3 (acro flip)
 AGGRO_CAP_FACTOR = 2.2  # collective cap (x hover) while torque demand is large,
 # preserving rotor headroom for attitude -- see bridge.AltitudeHold docstring
@@ -88,10 +90,15 @@ def run(
     # delivers ample attitude authority at those thrusts
     duration = duration if duration is not None else default_duration(scenario)
 
-    log = RunLog(simulator="mujoco", scenario=scenario)
+    log = RunLog(simulator="mujoco", scenario=scenario, noise=noise)
     vel = np.zeros(6)
     q_meas = np.array([1.0, 0.0, 0.0, 0.0])
     omega_meas = np.zeros(3)
+
+    # the MJCF's static spawn pose is 0.5 m; hover at the scenario's altitude
+    # (the flip starts high -- its ~2.9 s of near-idle collective free-falls
+    # ~43 m, so 60 m clears the floor with margin and the flip stays airborne)
+    data.qpos[2] = z_ref
 
     viewer = None
     if gui:

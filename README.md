@@ -11,7 +11,7 @@
 
 <p align="center">
   <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-27%2F27%20passing-brightgreen">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-39%20total%20%2827%20core%20%2B%2012%20sim%29-brightgreen">
   <img alt="Stack" src="https://img.shields.io/badge/stack-numpy%20%7C%20scipy%20%7C%20matplotlib%20%7C%20pandas-9C27B0">
   <img alt="Base paper" src="https://img.shields.io/badge/base%20paper-ECC%202013-00599C">
 </p>
@@ -25,7 +25,7 @@ constrained states. Fresk and Nikolakopoulos's point is that a quadrotor's attit
 *and* controller can live **entirely in quaternion space** — no Euler or DCM computation
 anywhere in the loop. This project reproduces that work exactly: every equation (1)–(21)
 is implemented function-for-function, under the paper's own gains, inertia, torque bounds,
-and measurement noise, and verified by a 27-test suite.
+and measurement noise, and verified by a 27-test core suite, extended by a 12-test cross-simulator suite.
 
 Two original contributions go beyond reproduction:
 
@@ -89,7 +89,7 @@ silently corrected (see Fidelity notes).
 | [`pysitl/`](pysitl/) | **6-DOF PX4-style extension** — rotors, mixer, gravity, ground contact, uORB-style bus, multi-rate scheduler, arming/failsafes, altitude hold, autopilot, CSV logging, browser ground station |
 | [`sim/`](sim/) | **Four-simulator deployment** (FRP) — the same unmodified controller flying gym-pybullet-drones, MuJoCo, Gazebo (WSL2), and ArduPilot SITL (WSL2), with one shared bridge, telemetry schema, and cross-simulator benchmark (`python -m sim.compare`) |
 | [`scenarios/`](scenarios/) | Runnable benchmark scripts (step / sine / flip) |
-| [`tests/`](tests/) | 27 tests: 7 paper-reproduction, 20 six-DOF |
+| [`tests/`](tests/) | 39 tests: 7 paper-reproduction, 20 six-DOF, 12 sim/bridge (2 stack-gated) |
 | [`docs/figures/`](docs/figures/) | Result figures used below |
 | [`REPORT.md`](REPORT.md) · [`report1.md`](report1.md) · [`file_structure.md`](file_structure.md) | Full technical report · project report #1 · file-by-file map with equation citations |
 | [`pysitl/README.md`](pysitl/README.md) · [`pysitl/UI_GUIDE.md`](pysitl/UI_GUIDE.md) | 6-DOF design notes · ground-station manual |
@@ -99,7 +99,7 @@ silently corrected (see Fidelity notes).
 
 ```bash
 pip install -e .
-pytest tests/ -v                                             # 27/27 pass
+pytest tests/ -v                                             # 39 total (2 stack-gated skips without sim stacks)
 
 # Paper reproduction — writes timestamped CSV + PNGs to results/
 python -m quat_sitl.simulator --scenario step --duration 15 --seed 0 --noise 0.1
@@ -243,6 +243,8 @@ dashboard manual: [`pysitl/UI_GUIDE.md`](pysitl/UI_GUIDE.md).
 |---|---|---|
 | `test_quaternion.py` | 7 | Non-commutativity, identity, DCM orthonormality/round-trip, rotation consistency, norm drift, fixed point, closed-loop sign consistency |
 | `test_sitl.py` | 20 | Frame conventions, eq. 18 parity, hover, ground contact, mixer + desaturation, noise bounds, tracking under noise, scheduler determinism/rate rejection, arming/failsafes, bus semantics, flip completion |
+| `test_sim_bridge.py` | 8 | The sim/ bridge: conjugate-convention proof on a standard plant, priority mixer + yaw-noise protection, altitude hold, rpm conversion, scenario parity |
+| `test_sim_adapters.py` | 4 | MuJoCo + gym-pybullet adapter smoke tests and the PyBullet actuation calibration (auto-skip without the stack) |
 
 Several are regressions for bugs found and fixed during development. `pytest tests/ -v`
 runs both suites.

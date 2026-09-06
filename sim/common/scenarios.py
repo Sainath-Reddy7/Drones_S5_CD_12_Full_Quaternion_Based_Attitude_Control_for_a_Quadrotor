@@ -21,15 +21,19 @@ SCENARIOS: dict[str, tuple[Callable[[float], FloatArr], bool, float]] = {
 }
 
 FLIP_RAMP_6DOF = 2.0
-"""Flip ramp duration for the 6-DOF simulator adapters (s). The ideal-plant
-reproduction keeps quat_sitl's documented 2.0 s; on rotor-actuated vehicles a
-2 s ramp (rate pi rad/s) sits knife-edge inside the P^2 law's pursuit
-equilibrium: the rate feedback -Pw*w cancels the position term exactly when
-5*sin(e/2) = pi, i.e. lag e ~= 1.29 rad, and whether the loop closes the gap
-depends on transients (measured: MuJoCo escaped by overshoot, PyBullet
-settled permanently at lag 1.24 rad). A 0.6 s ramp pushes the lag to ~pi,
-where the restoring rate 5*sin(e/2) is maximal, so the flip completes
-deterministically -- and it is how real acro firmware flips."""
+"""Flip ramp duration for the 6-DOF simulator adapters (s) -- the same 2.0 s
+documented assumption quat_sitl's ideal-plant reproduction uses. Why it stays
+2.0 and is not "tuned per engine": on rotor-actuated vehicles the P^2 law's
+pursuit equilibrium (rate feedback -Pw*w balancing the position term, i.e.
+vehicle rate 5*sin(e/2) at lag e) means a pi rad/s ramp is trackable only at
+lag e* = 2*asin(pi/5) ~= 1.36 rad -- the vehicle crosses 2 pi just after the
+reference, so completion is structurally marginal (knife-edge) rather than a
+tuning matter. Measured: MuJoCo completes it deterministically airborne
+(seeds 0-2: phi settles 2.87-2.97 s, dip to ~40 m of a 60 m start); PyBullet
+enters a limit cycle near phi ~= 2.1 rad and unwinds -- documented as finding
+4 in sim/README.md. Shortening the ramp does not help: the reference then
+reaches identity (2 pi = q = [1,0,0,0]) while the vehicle still lags, and the
+quaternion pulls it back the SHORT way, unwinding the flip."""
 
 
 def reference_quat(scenario: str, t: float, flip_ramp: float | None = None) -> FloatArr:

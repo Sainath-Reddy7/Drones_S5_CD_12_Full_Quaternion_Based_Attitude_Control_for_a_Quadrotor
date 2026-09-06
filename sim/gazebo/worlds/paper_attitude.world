@@ -1,77 +1,80 @@
 <?xml version="1.0" ?>
-<!-- Paper attitude scenarios in Gazebo (gz-sim).
+<!-- Paper attitude scenarios in Gazebo (gz-sim, SDF 1.10).
 
      The quadrotor is ardupilot_gazebo's stock `iris` model (their tested
      ArduPilot-compatible quad), included via GZ_SIM_RESOURCE_PATH. Physics
      runs in GAZEBO; ArduPilot SITL drives the motors through the
      ardupilot_gazebo plugin; our frozen quaternion controller rides on top
-     via MAVLink (sim/ardupilot/bridge_node.py). See README.md. -->
-<gz:world xmlns:gz="http://gzrobotics.org/schemas/">
+     via MAVLink (sim/ardupilot/bridge_node.py). See README.md.
 
-  <physics name="1ms" type="ignored">
-    <max_step_size>0.001</max_step_size>
-    <real_time_factor>1.0</real_time_factor>
-  </physics>
+     Spawn at 0.15 m: ArduPilot SITL takes off from the ground under its own
+     GUIDED takeoff; the attitude scenarios then run at the bridge's Z_REF. -->
+<sdf version="1.10">
+  <world name="paper_attitude">
 
-  <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
-  <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
-  <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
-  <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
-    <render_engine>ogre2</render_engine>
-  </plugin>
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
 
-  <gravity>0 0 -9.8066</gravity>
-  <magnetic_field>6.0e-6 2.3e-5 -4.2e-5</magnetic_field>
-  <atmosphere type="adiabatic"/>
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
 
-  <light type="directional" name="sun">
-    <cast_shadows>true</cast_shadows>
-    <pose>0 0 10 0 0 0</pose>
-    <diffuse>0.8 0.8 0.8 1</diffuse>
-    <specular>0.2 0.2 0.2 1</specular>
-    <attenuation>
-      <range>1000</range>
-      <constant>0.9</constant>
-      <linear>0.01</linear>
-      <quadratic>0.001</quadratic>
-    </attenuation>
-    <direction>-0.5 0.1 -0.9</direction>
-    <spot>
-      <inner_angle>0</inner_angle>
-      <outer_angle>0</outer_angle>
-      <falloff>0</falloff>
-    </spot>
-  </light>
+    <gravity>0 0 -9.8066</gravity>
+    <magnetic_field>6.0e-6 2.3e-5 -4.2e-5</magnetic_field>
+    <atmosphere type="adiabatic"/>
 
-  <model name="ground_plane">
-    <static>true</static>
-    <link name="link">
-      <collision name="collision">
-        <geometry>
-          <plane><normal>0 0 1</normal><size>100 100</size></plane>
-        </geometry>
-        <surface>
-          <friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction>
-        </surface>
-      </collision>
-      <visual name="visual">
-        <geometry>
-          <plane><normal>0 0 1</normal><size>100 100</size></plane>
-        </geometry>
-        <material>
-          <ambient>0.8 0.8 0.8 1</ambient>
-          <diffuse>0.8 0.8 0.8 1</diffuse>
-          <specular>0.8 0.8 0.8 1</specular>
-        </material>
-      </visual>
-    </link>
-  </model>
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+      <spot>
+        <inner_angle>0</inner_angle>
+        <outer_angle>0</outer_angle>
+        <falloff>0</falloff>
+      </spot>
+    </light>
 
-  <!-- spawn point for the ardupilot_gazebo iris quad (large margin for the
-       attitude scenarios' drift; see FRP.md section 3) -->
-  <include>
-    <uri>model://iris</uri>
-    <pose>0 0 0.15 0 0 0</pose>
-  </include>
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane><normal>0 0 1</normal><size>100 100</size></plane>
+          </geometry>
+          <surface>
+            <friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane><normal>0 0 1</normal><size>100 100</size></plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
 
-</gz:world>
+    <include>
+      <uri>model://iris</uri>
+      <pose>0 0 0.15 0 0 0</pose>
+    </include>
+
+  </world>
+</sdf>
