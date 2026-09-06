@@ -13,6 +13,7 @@ Fresk & Nikolakopoulos, *"Full Quaternion Based Attitude Control for a Quadrotor
 |---|---|
 | `quat_sitl/` | The paper reproduction: quaternion algebra (Eqs. 1–16), attitude plant (Eqs. 17–18), nonlinear P² controller (Eqs. 19–21), sensor noise, the three benchmark scenarios, plotting, and a 3D replay viewer. Attitude-only, exactly like the paper. |
 | `pysitl/` | A PX4-style 6-DOF extension: real rotors + mixer + gravity + ground contact, a uORB-style message bus, multi-rate scheduler, arming/failsafe commander, altitude hold, autopilot modes, CSV logging, analysis plots, and a browser ground station. Flies the **unmodified** `quat_sitl` controller. |
+| `sim/` | The four-simulator deployment (FRP.md): the same unmodified controller flying gym-pybullet-drones, MuJoCo, Gazebo (WSL2), and ArduPilot SITL (WSL2) through one shared bridge (`q_paper = conj(q_sim)`), one telemetry schema, and one cross-simulator benchmark (`python -m sim.compare`). |
 
 Plus `scenarios/` (runnable benchmark scripts), `tests/` (27 tests), `docs/figures/`
 (generated result figures), and one standalone browser simulator HTML file.
@@ -92,7 +93,38 @@ CD_12_Full-Quaternion-Based-Attitude-Control-for-a-Quadrotor-main/
 │
 ├── tests/
 │   ├── test_quaternion.py                  # 7 tests: algebra + closed-loop sign guardrail
-│   └── test_sitl.py                        # 20 tests: pysitl frame/mixer/scheduler/safety/...
+│   ├── test_sitl.py                        # 20 tests: pysitl frame/mixer/scheduler/safety/...
+│   ├── test_sim_bridge.py                  # 8 tests: sim/ bridge (conjugate-convention proof,
+│   │                                       #   priority mixer, altitude hold, rpm conversion)
+│   └── test_sim_adapters.py                # 4 tests: MuJoCo + gym-pybullet adapter smoke,
+│                                           #   PyBullet actuation calibration (stack-skipping)
+│
+├── sim/                                    # ── PACKAGE 3: four-simulator deployment (FRP) ───
+│   ├── README.md                           📄 architecture, runbook, findings, conventions
+│   ├── compare.py                          #   cross-simulator table → results/comparison.md
+│   ├── run_all.sh                          #   one-command benchmark reproduction (native stacks)
+│   ├── common/
+│   │   ├── __init__.py                     #   re-exports
+│   │   ├── bridge.py                       #   frozen paper controller + q_paper=conj(q_sim)
+│   │   │                                   #     convention, z-up priority mixer, altitude hold
+│   │   ├── scenarios.py                    #   paper scenarios re-export + 6-DOF flip-ramp note
+│   │   ├── telemetry.py                    #   one CSV schema + uniform metrics for all stacks
+│   │   └── plots.py                        #   standard attitude/torque figure pair per run
+│   ├── mujoco/
+│   │   ├── quadrotor.xml                   #   paper vehicle MJCF (20 kHz, contact floor)
+│   │   └── run.py                          #   adapter: sensors→conj→controller→mixer→wrench
+│   ├── gym_pybullet/
+│   │   ├── paper_quad.urdf                 #   paper vehicle as a gym-pybullet-drones asset
+│   │   └── run.py                          #   adapter: CtrlAviary at 24 kHz, rotor-order +
+│   │                                       #     yaw-pairing mapping to the package's _physics
+│   ├── gazebo/
+│   │   ├── README.md                       📄 WSL2 runbook (gz Harmonic + ardupilot_gazebo)
+│   │   ├── run_gazebo.sh                   #   one-shot world+SITL+bridge launch
+│   │   └── worlds/paper_attitude.world     #   gz world spawning the ardupilot_gazebo iris
+│   └── ardupilot/
+│       ├── bridge_node.py                  #   pymavlink bridge: SET_ATTITUDE_TARGET @ 50 Hz,
+│       │                                   #     q_cmd = conj(q_ref), ω_des = −(Pq/Pω)·axis_err
+│       └── requirements.txt                #   pymavlink & co
 │
 ├── docs/figures/                           ⚙ generated result figures (embedded in reports)
 │   ├── step_attitude.png                   #   step: φ/θ/ψ vs reference (paper Fig. 3)
@@ -593,6 +625,9 @@ For completeness — these are this project's own contributions, also citable in
 | **(28)** | Derived vehicle: `m_r = (Izz−Ixx)/(2L²)`, `I_b = 2Ixx−Izz` | `pysitl/params.py:56-59` (`rotor_mass`), docstring derivation at 9-25 |
 | **(29)** | Forward mixer (rotor thrusts → wrench) | `pysitl/airframe.py:46` (`thrusts_to_wrench`); round-trip tested in `test_sitl.py:142` |
 | **(30)** | Thrust-preserving desaturation `Tᵢ = Tc/4 + s·Dᵢ`, `ΣDᵢ = 0` | `pysitl/airframe.py:59-96` (`mix`); regression-tested in `test_sitl.py:153,167` |
+| **(31)** | Simulator convention `q_paper = conj(q_sim)` (eq. 18's literal minus sign integrates the conjugate of a standard body→world quaternion) | derived + proven in `sim/common/bridge.py` (module docstring); guarded by `tests/test_sim_bridge.py::test_conjugate_convention_drives_standard_plant` |
+| **(32)** | Priority desaturation: fit roll/pitch deltas with max `s₁∈[0,1]`, then yaw into remaining headroom (PX4-style) — yaw authority `c·T ≈ 0.03 N·m` vs ±4 N·m commands | `sim/common/bridge.py:mix_zup`; regression-tested in `test_sim_bridge.py::test_mixer_priority_protects_roll_from_yaw_noise` |
+| **(33)** | P² pursuit rate equilibrium `ω = (Pq/Pω)·sin(e/2)` — a 2 s flip ramp (π rad/s) is trackable only at lag e ≈ 1.36 rad; flip completion is engine-dependent at that knife-edge | derivation + measurements in `sim/README.md` (finding 4); scenario knob `sim/common/scenarios.py:FLIP_RAMP_6DOF` |
 
 ---
 
