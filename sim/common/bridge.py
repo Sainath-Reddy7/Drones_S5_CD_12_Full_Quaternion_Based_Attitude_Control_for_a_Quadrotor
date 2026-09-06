@@ -130,7 +130,8 @@ def mix_zup(
     geometry: RotorGeometry,
 ) -> tuple[tuple[float, float, float, float], float]:
     """Inverse mix (collective thrust + body torque -> 4 rotor thrusts) with
-    thrust-preserving desaturation, z-up twin of pysitl/airframe.py:mix.
+    PRIORITY desaturation, z-up twin of pysitl/airframe.py:mix upgraded for
+    rotor-level simulators (measured necessity, see sim/README.md findings).
 
     Rotor order and arm positions match pysitl's ARM_TIPS layout
     [(d,d), (-d,-d), (d,-d), (-d,d)]; rotors 1,2 spin CCW (reaction -z on the
@@ -139,8 +140,21 @@ def mix_zup(
         tx = d*( T1 - T2 - T3 + T4)
         ty = d*(-T1 + T2 - T3 + T4)
         tz = c*(-T1 - T2 + T3 + T4)
-    Returns (rotor_thrusts, desat_scale) with desat_scale in [0,1] = fraction of
-    the commanded torque that survived saturation (1.0 = unsaturated).
+
+    Why priority: the yaw channel's authority is c*thrust (~0.03 N*m at
+    hover) versus the paper law's +/-4 N*m commands. Under the paper's own
+    +/-0.1 quaternion noise the commanded yaw torque alone chatters at
+    ~+/-2 N*m, which under uniform scaling collapses the desaturation factor
+    to ~0.002 and takes roll/pitch authority down with it (measured: flips
+    stall mid-rotation). PX4's mixer solves the same problem by desaturating
+    roll/pitch first and giving yaw the leftover headroom; so does this:
+
+        1. fit the zero-sum roll/pitch deltas with the largest s1 in [0,1],
+        2. fit the yaw deltas into whatever per-rotor headroom remains.
+
+    Common-mode thrust is exactly preserved in both stages (deltas are
+    zero-sum). Returns (rotor_thrusts, s1) -- s1 is the roll/pitch scale that
+    actually matters for attitude tracking; yaw may realize less.
     """
     d = geometry.arm
     c = geometry.yaw_coeff
@@ -150,18 +164,28 @@ def mix_zup(
     base = max(0.0, min(tmax, thrust_cmd / 4.0))
 
     a, b, g = tx / d, ty / d, tz / c
-    deltas = ((a - b - g) / 4.0, (-a + b - g) / 4.0, (-a - b + g) / 4.0, (a + b + g) / 4.0)
+    rp_deltas = ((a - b) / 4.0, (-a + b) / 4.0, (-a - b) / 4.0, (a + b) / 4.0)
 
-    scale = 1.0
-    for delta in deltas:
+    s1 = 1.0
+    for delta in rp_deltas:
         if delta > 1e-12:
-            scale = min(scale, (tmax - base) / delta)
+            s1 = min(s1, (tmax - base) / delta)
         elif delta < -1e-12:
-            scale = min(scale, (0.0 - base) / delta)
-    scale = max(0.0, min(1.0, scale))
+            s1 = min(s1, (0.0 - base) / delta)
+    s1 = max(0.0, min(1.0, s1))
+    thrusts = [base + s1 * delta for delta in rp_deltas]
 
-    thrusts = tuple(base + scale * delta for delta in deltas)
-    return thrusts, scale  # type: ignore[return-value]
+    yaw_deltas = (-g / 4.0, -g / 4.0, g / 4.0, g / 4.0)
+    s2 = 1.0
+    for ti, delta in zip(thrusts, yaw_deltas):
+        if delta > 1e-12:
+            s2 = min(s2, (tmax - ti) / delta)
+        elif delta < -1e-12:
+            s2 = min(s2, (0.0 - ti) / delta)
+    s2 = max(0.0, min(1.0, s2))
+    thrusts = [ti + s2 * delta for ti, delta in zip(thrusts, yaw_deltas)]
+
+    return tuple(thrusts), s1  # type: ignore[return-value]
 
 
 def thrusts_to_wrench_zup(

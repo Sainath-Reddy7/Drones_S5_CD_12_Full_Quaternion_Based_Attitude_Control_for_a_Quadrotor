@@ -40,7 +40,7 @@ def load_run(path: Path):
             if not r:
                 continue
             if r[0].startswith("#"):
-                for item in (c.strip() for c in r):
+                for item in (c.strip().lstrip("#").strip() for c in r):
                     if item.startswith("simulator="):
                         simulator = item.split("=", 1)[1]
                     elif item.startswith("scenario="):
@@ -78,7 +78,7 @@ def write_table(runs, out_path: Path) -> str:
         vals = []
         for k in METRIC_KEYS:
             v = m.get(k)
-            vals.append("--" if v is None else f"{v:.3g}")
+            vals.append("--" if v is None else f"{v:.2f}")
         lines.append(f"| {m['simulator']} | {m['scenario']} | " + " | ".join(vals) + " |")
     table = "\n".join(lines)
     out_path.parent.mkdir(parents=True, exist_ok=True)

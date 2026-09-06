@@ -49,6 +49,19 @@ def test_mixer_desaturation_preserves_thrust():
     assert all(0.0 <= t <= PAPER_VEHICLE.rotor_thrust_max for t in thrusts)
 
 
+def test_mixer_priority_protects_roll_from_yaw_noise():
+    """The measured failure mode: yaw chatter far beyond the yaw channel's
+    authority must not collapse roll authority (PX4-style priority)."""
+    thrust = 0.98  # 0.5 hover
+    tau_yaw_chatter = np.array([0.05, -0.02, 2.5])  # big yaw noise + real roll
+    thrusts, s1 = mix_zup(thrust, tau_yaw_chatter, PAPER_VEHICLE)
+    fz, tau_real = thrusts_to_wrench_zup(thrusts, PAPER_VEHICLE)
+    assert s1 > 0.4  # uniform scaling here would give ~0.01
+    assert fz == pytest.approx(thrust, abs=1e-12)
+    # yaw gets only what fits
+    assert abs(tau_real[2]) < 2.5 * PAPER_VEHICLE.yaw_coeff * 4
+
+
 def test_mixer_roll_sign():
     """Positive tau_x must come mostly from the +y-arm rotors (1 at (d,d),
     4 at (-d,d)) -- the z-up forward mix's own sign convention."""

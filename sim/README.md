@@ -58,22 +58,47 @@ and `pybullet`; the ArduPilot bridge needs `pymavlink`
 
 ## Findings so far (logged as they appeared)
 
-1. **The ideal-plant ±4 N·m bound is not rotor-realizable.** On the paper
+Benchmark table: `results/comparison.md` (regenerate with `python -m sim.compare`).
+
+1. **The frozen controller transfers across engines.** Step and sine, run
+   with identical gains/references/noise on MuJoCo and gym-pybullet-drones,
+   land within 0.2 deg of each other in RMS attitude error (17.7 vs 17.7,
+   17.6 vs 17.5) — the loop is the bridge's, not either engine's.
+2. **The ideal-plant ±4 N·m bound is not rotor-realizable.** On the paper
    vehicle the mixer can produce at most ≈ 0.4 N·m of roll/pitch torque; the
-   adapters command through the same desaturation as a real ESC mixer, and the
-   scenarios still track (the inertia is tiny) — but the paper's saturation
-   plot is a property of its idealized control-signal-to-torque identity.
-2. **A slow 2 s ramp flip needs acro-style thrust handling.** Tilt-compensated
-   altitude hold keeps pushing collective while the vehicle is inverted,
-   accelerating the fall and (through mixer desaturation) starving attitude
-   authority — measured: flip deadlocks at exactly 180°. The flip scenario
-   therefore starts at 5 m, idles collective when `tilt_cos < 0.3`, and caps
-   collective while torque demand is high, exactly as acro-mode firmware does.
-   Step/sine must NOT use those rules: holding 1 rad on two axes gives
-   `tilt_cos = 0.29`, and idling/capping there sinks the vehicle.
-3. **The 12.3 kHz control-rate bound carries over.** The MuJoCo adapter steps
-   physics at 20 kHz with the controller in the loop every step and asserts
-   the derived minimum at startup, same as the pysitl scheduler.
+   paper's saturation plot is a property of its control-signal-to-torque
+   identity. Relatedly, the yaw channel's authority (c·T ≈ 0.03 N·m at
+   hover) is so small that the paper's ±0.1 quaternion noise alone commands
+   ±2-3 N·m of yaw chatter, which under uniform mixer scaling collapsed ALL
+   axes' authority to ~0.2%. The mixer therefore desaturates with PX4-style
+   priority (roll/pitch first, yaw gets the leftovers) — `bridge.mix_zup`.
+3. **A slow ramp flip needs acro-style thrust handling.** Tilt-compensated
+   altitude hold keeps pushing collective while inverted, accelerating the
+   fall and starving attitude authority through the mixer (measured: flip
+   deadlocks at exactly 180°, inverted). Flip runs therefore start at 30 m,
+   idle collective at 10% of hover while `tilt_cos < 0.3`, and cap
+   collective at 2.2× hover while torque demand is high — what acro-mode
+   firmware does. Step/sine must NOT use these rules: holding 1 rad on two
+   axes gives `tilt_cos = 0.29`, and idling/capping there sinks the vehicle.
+4. **The flip is a knife-edge maneuver on rotor-level plants.** The P² law's
+   rate equilibrium is ω = 5·sin(e/2): a 2 s ramp (π rad/s) is trackable
+   only with lag ≈ 1.36 rad, the vehicle crosses 2π just after the
+   reference, and completion depends on engine-level integration details.
+   Measured: MuJoCo completes deterministically (3 seeds: φ settles
+   2.44-2.47 s, 2% saturation); PyBullet enters a limit cycle near φ ≈ 2.1
+   rad and unwinds when the reference reaches identity (3 seeds: never
+   settles, 60-79% saturation). The ideal-plant reproduction (quat_sitl)
+   shows the paper's own smooth 2π tracking with no gimbal-lock artifact.
+5. **The 12.3 kHz control-rate bound carries over.** Both native adapters
+   step physics at 20-24 kHz with the controller in the loop every step and
+   assert the derived minimum at startup, same as the pysitl scheduler.
+6. **Integration gotchas worth recording** (each cost a debugging session):
+   gym-pybullet-drones' `BaseAviary.GRAVITY` is the vehicle's WEIGHT (M·g),
+   not g — using it as an acceleration silently halves-to-fifths collective
+   thrust; PyBullet's default 0.04 linear/angular damping is wrong for
+   quadrotor airframes and eats flip momentum (the package ships the removal
+   commented out); MuJoCo child bodies with default-density geoms silently
+   add mass to a "0.2 kg" vehicle (use massless sites for visuals).
 
 ## Conventions (for anyone adding a fifth stack)
 

@@ -87,6 +87,7 @@ silently corrected (see Fidelity notes).
 |---|---|
 | [`quat_sitl/`](quat_sitl/) | **Paper reproduction** — quaternion algebra (eqs. 1–16), plant (eqs. 17–18), P² controller (eqs. 19–21), noise model, three benchmark scenarios, plots, 3D replay viewer |
 | [`pysitl/`](pysitl/) | **6-DOF PX4-style extension** — rotors, mixer, gravity, ground contact, uORB-style bus, multi-rate scheduler, arming/failsafes, altitude hold, autopilot, CSV logging, browser ground station |
+| [`sim/`](sim/) | **Four-simulator deployment** (FRP) — the same unmodified controller flying gym-pybullet-drones, MuJoCo, Gazebo (WSL2), and ArduPilot SITL (WSL2), with one shared bridge, telemetry schema, and cross-simulator benchmark (`python -m sim.compare`) |
 | [`scenarios/`](scenarios/) | Runnable benchmark scripts (step / sine / flip) |
 | [`tests/`](tests/) | 27 tests: 7 paper-reproduction, 20 six-DOF |
 | [`docs/figures/`](docs/figures/) | Result figures used below |
@@ -111,6 +112,12 @@ python -m quat_sitl.visualize3d                              # animated 3D repla
 python -m pysitl.run --gcs                                   # browser ground station → http://127.0.0.1:8765
 python -m pysitl.run --mode auto_step --duration 15 --log    # headless paper scenarios
 python -m pysitl.run --mode auto_flip --duration 5 --log
+
+# Cross-simulator deployment (FRP.md): same controller, four stacks
+python -m sim.mujoco.run --scenario step --duration 15 --seed 0 --noise 0.1
+python -m sim.gym_pybullet.run --scenario flip
+python -m sim.compare                                       # results/comparison.md
+# Gazebo + ArduPilot SITL run under WSL2: sim/gazebo/README.md, sim/ardupilot/
 ```
 
 In the ground station: **Arm**, pick a mode, fly with `W/S` (pitch), `A/D` (roll),

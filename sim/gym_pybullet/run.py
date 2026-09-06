@@ -43,14 +43,19 @@ from quat_sitl import quaternion as quat
 from quat_sitl.dynamics import InertiaParams, stable_control_rate_hz
 from sim.common import AltitudeHold, PAPER_VEHICLE, QuatBridge, RotorGeometry, RunLog, summarize
 from sim.common.plots import plot_run
-from sim.common.scenarios import default_duration, reference_quat, shortest_path
+from sim.common.scenarios import (
+    FLIP_RAMP_6DOF,
+    default_duration,
+    reference_quat,
+    shortest_path,
+)
 
 CTRL_HZ = 24_000
 SENSOR_HZ = 1_000.0
 ALTITUDE_HZ = 250.0
 LOG_HZ = 1_000.0
 Z_REF = 0.5
-Z_REF_FLIP = 5.0  # same free-fall margin analysis as sim/mujoco/run.py
+Z_REF_FLIP = 30.0  # same free-fall margin analysis as sim/mujoco/run.py
 IDLE_FRACTION = 0.1
 AGGRO_CAP_FACTOR = 2.2
 VEHICLE_MASS = 0.2  # kg, pysitl-derived paper vehicle
@@ -113,7 +118,9 @@ def run(
     bridge = QuatBridge(geometry=GEOMETRY, shortest_path=shortest_path(scenario))
     altitude = AltitudeHold()
     duration = duration if duration is not None else default_duration(scenario)
-    gravity = float(env.GRAVITY)
+    # BaseAviary.GRAVITY is the vehicle's WEIGHT (M*g), not g -- the gravity
+    # acceleration actually set in PyBullet is BaseAviary.G
+    gravity = float(getattr(env, "G", 9.8))
 
     log = RunLog(simulator="gym_pybullet", scenario=scenario, noise=noise)
     q_meas = np.array([1.0, 0.0, 0.0, 0.0])
@@ -125,6 +132,15 @@ def run(
     log_every = max(1, int(round(CTRL_HZ / LOG_HZ)))
 
     obs, _ = env.reset()
+    # PyBullet's default damping (0.04 linear/angular) is aerodynamically
+    # wrong for a quadrotor airframe and, at flip rotation rates, eats the
+    # angular momentum the flip coasts on -- gym-pybullet-drones ships the
+    # same removal commented out in BaseAviary. Applied explicitly here.
+    import pybullet as p
+
+    for i in env.DRONE_IDS:
+        p.changeDynamics(int(i), -1, linearDamping=0.0, angularDamping=0.0,
+                         physicsClientId=env.CLIENT)
     dt = 1.0 / CTRL_HZ
     n_steps = int(round(duration / dt))
 
@@ -147,7 +163,7 @@ def run(
             omega_meas = omega_body + rng.uniform(-noise, noise, 3)
 
         # --- paper controller, every step -----------------------------------
-        q_ref = reference_quat(scenario, t)
+        q_ref = reference_quat(scenario, t, flip_ramp=FLIP_RAMP_6DOF if scenario == "flip" else None)
         q_m = quat.conj(q_meas)
         tau, sat = bridge.torque(q_ref, q_m, omega_meas)
 

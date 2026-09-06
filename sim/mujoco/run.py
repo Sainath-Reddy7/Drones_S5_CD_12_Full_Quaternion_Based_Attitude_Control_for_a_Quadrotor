@@ -35,7 +35,12 @@ from sim.common import (
     thrusts_to_wrench_zup,
 )
 from sim.common.plots import plot_run
-from sim.common.scenarios import default_duration, reference_quat, shortest_path
+from sim.common.scenarios import (
+    FLIP_RAMP_6DOF,
+    default_duration,
+    reference_quat,
+    shortest_path,
+)
 
 XML_PATH = Path(__file__).with_name("quadrotor.xml")
 VEHICLE_MASS = 0.2  # kg -- same pysitl derivation the MJCF inertial encodes
@@ -44,7 +49,7 @@ SENSOR_HZ = 1_000.0
 ALTITUDE_HZ = 250.0
 LOG_HZ = 1_000.0
 Z_REF = 0.5  # m, hover altitude for step/sine
-Z_REF_FLIP = 5.0  # m: a 2 s ramp flip spends ~1.4 s near-inverted with near-idle
+Z_REF_FLIP = 30.0  # m: a 2 s ramp flip spends ~1.4 s near-inverted with near-idle
 # thrust; measured free-fall bottom is ~3.9 m below start, so 5 m leaves margin.
 IDLE_FRACTION = 0.1  # collective = 10% of hover while tilt_cos < 0.3 (acro flip)
 AGGRO_CAP_FACTOR = 2.2  # collective cap (x hover) while torque demand is large,
@@ -111,7 +116,7 @@ def run(
             omega_meas = omega + rng.uniform(-noise, noise, 3)
 
         # --- paper controller, every step -----------------------------------
-        q_ref = reference_quat(scenario, t)
+        q_ref = reference_quat(scenario, t, flip_ramp=FLIP_RAMP_6DOF if scenario == "flip" else None)
         q_m = quat.conj(q_meas)  # bridge convention: paper q = conj(body->world)
         tau, sat = bridge.torque(q_ref, q_m, omega_meas)
 

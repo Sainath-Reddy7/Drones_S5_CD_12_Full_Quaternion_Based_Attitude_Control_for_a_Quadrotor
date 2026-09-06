@@ -12,3 +12,7 @@ dist/
 .venv313/
 mmenv/
 micromamba.exe
+.mamba-root/
+Library/
+mm.tar.bz2
+info/
