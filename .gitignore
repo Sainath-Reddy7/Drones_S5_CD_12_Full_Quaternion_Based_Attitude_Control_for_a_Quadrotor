@@ -8,3 +8,5 @@ results/*.gif
 results/*.mp4
 build/
 dist/
+.venv310/
+.venv313/

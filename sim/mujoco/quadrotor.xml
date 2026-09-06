@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Paper vehicle in MJCF: mass 0.2 kg and diaginertia are the pysitl-derived
+     airframe (FRP.md section 2): paper inertia Ixx=Iyy=6.5e-4, Izz=1.2e-3 kg*m^2,
+     arm length L=0.15 m (rotor tips at (+-d,+-d, 0), d = L/sqrt(2)).
+     World/body are z-up, so sim/common/bridge.py's z-up mixer applies thrust
+     along body +z and torque about the body axes directly.
+
+     Timestep 5e-5 s (20 kHz) clears the paper-derived minimum control rate
+     (~12.3 kHz) with margin -- quat_sitl.dynamics.stable_control_rate_hz. -->
+<mujoco model="paper_quadrotor">
+  <option timestep="5e-5" gravity="0 0 -9.81" integrator="implicitfast"/>
+
+  <visual>
+    <headlight ambient="0.4 0.4 0.4" diffuse="0.6 0.6 0.6"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.45 0.55 0.75" rgb2="0.9 0.9 0.95" width="256" height="256"/>
+  </asset>
+
+  <worldbody>
+    <light directional="true" pos="0 0 4" dir="0 0 -1"/>
+    <geom name="floor" type="plane" size="25 25 0.1" rgba="0.55 0.6 0.55 1"
+          friction="1.0 0.5 0.5"/>
+
+    <body name="quadrotor" pos="0 0 0.5">
+      <freejoint name="root"/>
+      <inertial pos="0 0 0" mass="0.2" diaginertia="6.5e-4 6.5e-4 1.2e-3"/>
+      <!-- collision frame: thin plate covering the 0.15 m arms -->
+      <geom name="frame" type="box" size="0.17 0.17 0.015" rgba="0.25 0.25 0.28 0.5"
+            friction="0.8 0.5 0.5"/>
+      <!-- visual prop discs as SITES: massless, zero physics footprint (geoms
+           would add default-density mass and corrupt the paper vehicle's
+           0.2 kg). Order matches bridge.py mix_zup: 1 FR(+d,+d), 2 RL(-d,-d),
+           3 FL(+d,-d), 4 RR(-d,+d) -->
+      <site name="m1" type="cylinder" pos="0.106066 0.106066 0.025" size="0.045 0.006" rgba="0.85 0.2 0.2 1"/>
+      <site name="m2" type="cylinder" pos="-0.106066 -0.106066 0.025" size="0.045 0.006" rgba="0.2 0.2 0.85 1"/>
+      <site name="m3" type="cylinder" pos="0.106066 -0.106066 0.025" size="0.045 0.006" rgba="0.2 0.85 0.2 1"/>
+      <site name="m4" type="cylinder" pos="-0.106066 0.106066 0.025" size="0.045 0.006" rgba="0.85 0.85 0.2 1"/>
+    </body>
+  </worldbody>
+</mujoco>
