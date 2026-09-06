@@ -16,3 +16,5 @@ micromamba.exe
 Library/
 mm.tar.bz2
 info/
+deploy/.vercel/
+deploy/.env.local
