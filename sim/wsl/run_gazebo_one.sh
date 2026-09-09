@@ -23,7 +23,7 @@ echo "[gz-run] gazebo up"
 
 cd /root/ardupilot
 nohup timeout 400 Tools/autotest/sim_vehicle.py -v ArduCopter -f gazebo-iris \
-    --no-mavproxy -w > /root/sitl_gz.log 2>&1 &
+    --model JSON --no-mavproxy -w > /root/sitl_gz.log 2>&1 &
 echo "[gz-run] SITL (gazebo-iris) booting..."
 sleep 30
 if ! pgrep -f arducopter >/dev/null; then
