@@ -97,11 +97,14 @@ class ArduBridge:
         # flight stack silently clamps our setpoints (centidegrees)
         try:
             self.master.param_set_send(
-                b"ANGLE_MAX", 6000,
+                "ANGLE_MAX", 6000,
                 self.master.target_system, self.master.target_component,
             )
-        except TypeError:  # newer pymavlink: targets optional
-            self.master.param_set_send(b"ANGLE_MAX", 6000)
+        except TypeError:  # newer pymavlink: targets optional, name may be bytes
+            try:
+                self.master.param_set_send("ANGLE_MAX", 6000)
+            except AttributeError:
+                self.master.param_set_send(b"ANGLE_MAX", 6000)
 
     def _mode_number(self, name: str) -> int:
         # the name->number mapping moved across pymavlink versions; use the
