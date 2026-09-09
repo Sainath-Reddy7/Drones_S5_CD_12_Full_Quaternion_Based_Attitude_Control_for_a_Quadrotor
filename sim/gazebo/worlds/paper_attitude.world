@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <!-- Paper attitude scenarios in Gazebo (gz-sim, SDF 1.10).
 
-     The quadrotor is ardupilot_gazebo's stock `iris` model (their tested
+     The quadrotor is ardupilot_gazebo's `iris_with_ardupilot` model (their tested
      ArduPilot-compatible quad), included via GZ_SIM_RESOURCE_PATH. Physics
      runs in GAZEBO; ArduPilot SITL drives the motors through the
      ardupilot_gazebo plugin; our frozen quaternion controller rides on top
@@ -72,7 +72,7 @@
     </model>
 
     <include>
-      <uri>model://iris</uri>
+      <uri>model://iris_with_ardupilot</uri>
       <pose>0 0 0.15 0 0 0</pose>
     </include>
 
