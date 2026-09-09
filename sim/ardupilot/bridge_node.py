@@ -95,10 +95,13 @@ class ArduBridge:
         # the paper's references command 1 rad (57.3 deg) tilts and a 360 deg
         # flip; ArduPilot's stock ANGLE_MAX is 45 deg -- raise it or the
         # flight stack silently clamps our setpoints (centidegrees)
-        self.master.param_set_send(
-            b"ANGLE_MAX", 6000,
-            self.master.target_system, self.master.target_component,
-        )
+        try:
+            self.master.param_set_send(
+                b"ANGLE_MAX", 6000,
+                self.master.target_system, self.master.target_component,
+            )
+        except TypeError:  # newer pymavlink: targets optional
+            self.master.param_set_send(b"ANGLE_MAX", 6000)
 
     def _mode_number(self, name: str) -> int:
         # the name->number mapping moved across pymavlink versions; use the
