@@ -8,3 +8,13 @@ results/*.gif
 results/*.mp4
 build/
 dist/
+.venv310/
+.venv313/
+mmenv/
+.mamba-root/
+Library/
+mm.tar.bz2
+micromamba.exe
+info/
+deploy/.vercel/
+deploy/.env.local
