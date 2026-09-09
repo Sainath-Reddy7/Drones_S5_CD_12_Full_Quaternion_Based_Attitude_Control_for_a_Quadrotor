@@ -5,7 +5,7 @@
 set -u
 SCEN="${SCEN:-step}"; DUR="${DUR:-15}"; SEED="${SEED:-0}"; NOISE="${NOISE:-0.1}"
 export GZ_SIM_SYSTEM_PLUGIN_PATH=/root/ardupilot_gazebo/build
-export GZ_SIM_RESOURCE_PATH=/root/ardupilot_gazebo/models:/root/ardupilot_gazebo/worlds
+export GZ_SIM_RESOURCE_PATH=/root/ardupilot_gazebo/models:/root/ardupilot_gazebo/worlds:/root/drones/sim/gazebo/worlds
 REPO=/root/drones
 
 echo "[gz-run] scenario=$SCEN duration=$DUR"
@@ -13,7 +13,7 @@ pkill -f arducopter 2>/dev/null; pkill -f sim_vehicle 2>/dev/null
 pkill -f 'gz sim' 2>/dev/null; pkill -f ruby 2>/dev/null; sleep 2
 
 cd /root/ardupilot_gazebo
-nohup timeout 400 gz sim -s -r -v3 worlds/iris.sdf > /root/gz.log 2>&1 &
+nohup timeout 400 gz sim -s -r -v3 /root/drones/sim/gazebo/worlds/paper_attitude.world > /root/gz.log 2>&1 &
 echo "[gz-run] gazebo starting..."
 sleep 12
 if ! pgrep -f 'gz sim' >/dev/null; then
