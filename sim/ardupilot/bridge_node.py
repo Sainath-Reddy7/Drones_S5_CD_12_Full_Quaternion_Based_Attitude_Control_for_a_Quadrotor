@@ -92,6 +92,13 @@ class ArduBridge:
                 self.mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
                 msg_id, int(1e6 / hz), 0.0, 0.0, 0.0, 0.0, 0.0,
             )
+        # the paper's references command 1 rad (57.3 deg) tilts and a 360 deg
+        # flip; ArduPilot's stock ANGLE_MAX is 45 deg -- raise it or the
+        # flight stack silently clamps our setpoints (centidegrees)
+        self.master.param_set_send(
+            b"ANGLE_MAX", 6000,
+            self.master.target_system, self.master.target_component,
+        )
 
     def _mode_number(self, name: str) -> int:
         # the name->number mapping moved across pymavlink versions; use the
@@ -114,12 +121,24 @@ class ArduBridge:
                 return
         raise TimeoutError(f"mode {name} (custom_mode {want}) not reached within {timeout}s")
 
+    def _is_armed(self) -> bool:
+        m = self.master.recv_match(type="HEARTBEAT", blocking=True, timeout=2.0)
+        return bool(m and m.base_mode & self.mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED)
+
     def arm_and_takeoff(self) -> None:
         mav, mu = self.master, self.mavutil
         mav.set_mode("GUIDED")
         self._wait_mode("GUIDED")
-        mav.arducopter_arm()
-        print("[bridge] armed")
+        # real firmware needs EKF/GPS readiness before arming -- retry
+        t0 = time.time()
+        while time.time() - t0 < 45.0:
+            self.master.arducopter_arm()
+            if self._is_armed():
+                print(f"[bridge] armed after {time.time() - t0:.0f}s")
+                break
+            time.sleep(2.0)
+        else:
+            raise TimeoutError("flight stack refused to arm (EKF/GPS not ready)")
         mav.mav.command_long_send(
             mav.target_system, mav.target_component,
             mu.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, Z_REF,
