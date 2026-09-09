@@ -25,7 +25,7 @@ cd /root/ardupilot
 # MAVLink routed via MAVProxy (serves a clean TCP master on 5769); the stock
 # 5760 endpoint proved unreliable under the JSON interface in this setup.
 nohup timeout 400 Tools/autotest/sim_vehicle.py -v ArduCopter -f gazebo-iris \
-    --model JSON -w --console --map \
+    --model JSON -w \
     --mavproxy-args='--out=tcpin:0.0.0.0:5769' > /root/sitl_gz.log 2>&1 &
 echo "[gz-run] SITL (gazebo-iris + mavproxy) booting..."
 sleep 30
