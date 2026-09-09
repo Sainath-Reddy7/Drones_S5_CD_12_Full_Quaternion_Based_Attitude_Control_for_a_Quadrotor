@@ -22,19 +22,22 @@ fi
 echo "[gz-run] gazebo up"
 
 cd /root/ardupilot
+# MAVLink routed via MAVProxy (serves a clean TCP master on 5769); the stock
+# 5760 endpoint proved unreliable under the JSON interface in this setup.
 nohup timeout 400 Tools/autotest/sim_vehicle.py -v ArduCopter -f gazebo-iris \
-    --model JSON --no-mavproxy -w > /root/sitl_gz.log 2>&1 &
-echo "[gz-run] SITL (gazebo-iris) booting..."
+    --model JSON -w --console --map \
+    --mavproxy-args='--out=tcpin:0.0.0.0:5769' > /root/sitl_gz.log 2>&1 &
+echo "[gz-run] SITL (gazebo-iris + mavproxy) booting..."
 sleep 30
 if ! pgrep -f arducopter >/dev/null; then
   echo "[gz-run] SITL FAILED"; tail -6 /root/sitl_gz.log; exit 1
 fi
-ss -ltn | grep 576 || echo "[gz-run] WARNING: no 576x listener yet"
+ss -ltn | grep -E "5760|5769" || echo "[gz-run] WARNING: no mavlink listener yet"
 
 cd "$REPO"
 timeout 200 python3 -m sim.ardupilot.bridge_node \
     --scenario "$SCEN" --duration "$DUR" --seed "$SEED" --noise "$NOISE" \
-    --connection tcp:127.0.0.1:5760
+    --connection tcp:127.0.0.1:5769
 RC=$?
 
 pkill -f arducopter 2>/dev/null; pkill -f sim_vehicle 2>/dev/null
