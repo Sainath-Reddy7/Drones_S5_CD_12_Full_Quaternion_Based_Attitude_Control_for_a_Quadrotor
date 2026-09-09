@@ -15,7 +15,7 @@ Fresk & Nikolakopoulos, *"Full Quaternion Based Attitude Control for a Quadrotor
 | `pysitl/` | A PX4-style 6-DOF extension: real rotors + mixer + gravity + ground contact, a uORB-style message bus, multi-rate scheduler, arming/failsafe commander, altitude hold, autopilot modes, CSV logging, analysis plots, and a browser ground station. Flies the **unmodified** `quat_sitl` controller. |
 | `sim/` | The four-simulator deployment (FRP.md): the same unmodified controller flying gym-pybullet-drones, MuJoCo, Gazebo (WSL2), and ArduPilot SITL (WSL2) through one shared bridge (`q_paper = conj(q_sim)`), one telemetry schema, and one cross-simulator benchmark (`python -m sim.compare`). |
 
-Plus `scenarios/` (runnable benchmark scripts), `tests/` (39 tests), `docs/figures/`
+Plus `scenarios/` (runnable benchmark scripts), `tests/` (41 tests), `docs/figures/`
 (generated result figures), and one standalone browser simulator HTML file.
 
 ---
@@ -484,7 +484,7 @@ commander arming-on-ground, altitude-breach failsafe, disarmed ⇒ zero thrust; 
 latest-value/sequence semantics; AUTO_FLIP completing the full 2π (lands on
 q ≈ [−1,0,0,0], identity's double cover).
 
-**Core total: 27/27 tests pass** — plus 12 sim-deployment tests (`test_sim_bridge.py`: 8, `test_sim_adapters.py`: 4, the latter stack-gated) = **39 total**.
+**Core total: 27/27 tests pass** — plus 14 sim-deployment tests (`test_sim_bridge.py`: 8, `test_sim_adapters.py`: 5, `test_bridge_mavlink.py`: 1; adapter tests stack-gated) = **41 total**.
 
 ---
 
@@ -578,7 +578,7 @@ installed.
   0.309 rad under full paper noise while holding altitude to centimeters.
 - **Mixer regression**: thrust-preserving desaturation (`airframe.py:59`) fixes a
   measured altitude runaway to 154 m that naive per-rotor clipping caused.
-- **Test suite**: 7 (`test_quaternion.py`) + 20 (`test_sitl.py`) = 27/27 core; + 12 sim (`test_sim_bridge.py`, `test_sim_adapters.py`) = 39 total.
+- **Test suite**: 7 (`test_quaternion.py`) + 20 (`test_sitl.py`) = 27/27 core; + 14 sim (`test_sim_bridge.py`, `test_sim_adapters.py`, `test_bridge_mavlink.py`) = 41 total.
 
 ---
 

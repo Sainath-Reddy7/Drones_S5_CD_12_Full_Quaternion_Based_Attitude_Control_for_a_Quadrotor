@@ -93,16 +93,26 @@ class ArduBridge:
                 msg_id, int(1e6 / hz), 0.0, 0.0, 0.0, 0.0, 0.0,
             )
 
+    def _mode_number(self, name: str) -> int:
+        # the name->number mapping moved across pymavlink versions; use the
+        # connection's mapping when present, ArduCopter's documented numbers
+        # otherwise (GUIDED=15, LAND=9, LOITER=5, STABILIZE=0)
+        mapping = getattr(self.master, "mode_mapping", lambda: None)()
+        if mapping and name in mapping:
+            return int(mapping[name])
+        return {"GUIDED": 15, "LAND": 9, "LOITER": 5, "STABILIZE": 0}.get(name, -1)
+
     def _wait_mode(self, name: str, timeout: float = 20.0) -> None:
+        want = self._mode_number(name)
         t0 = time.time()
         while time.time() - t0 < timeout:
             m = self.master.recv_match(type="HEARTBEAT", blocking=True, timeout=2.0)
             if m is None:
                 continue
-            if self.mavutil.mode_string_by_dialect(m.custom_mode) == name:
-                print(f"[bridge] mode {name} confirmed")
+            if m.custom_mode == want:
+                print(f"[bridge] mode {name} (custom_mode {want}) confirmed")
                 return
-        raise TimeoutError(f"mode {name} not reached within {timeout}s")
+        raise TimeoutError(f"mode {name} (custom_mode {want}) not reached within {timeout}s")
 
     def arm_and_takeoff(self) -> None:
         mav, mu = self.master, self.mavutil
@@ -142,6 +152,7 @@ class ArduBridge:
 
     # -- main loop ------------------------------------------------------------
     def run(self, duration: float) -> dict:
+        self.connect()
         altitude = AltitudeHold()
         law = NonlinearP2Controller(shortest_path=shortest_path(self.scenario))
 

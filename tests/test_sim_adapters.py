@@ -91,3 +91,26 @@ def test_pybullet_actuation_calibration():
         f"realized |wx|={abs(wb[0]):.1f} vs expected {expected:.1f} rad/s "
         "-- PyBullet actuation mapping no longer matches the mixer"
     )
+
+
+def test_gazebo_world_is_valid_sdf():
+    """The Gazebo world must be well-formed SDF with the systems the
+    ardupilot_gazebo backend requires (gz-sim runs it under WSL2; this guards
+    the file machine-independently)."""
+    import xml.etree.ElementTree as ET
+    from pathlib import Path
+
+    world = Path(__file__).resolve().parent.parent / "sim" / "gazebo" / "worlds" / "paper_attitude.world"
+    root = ET.parse(world).getroot()
+    assert root.tag == "sdf"
+    assert root.get("version")
+    w = root.find("world")
+    assert w is not None and w.get("name") == "paper_attitude"
+    plugins = {p.get("filename") for p in w.findall("plugin")}
+    for needed in ("gz-sim-physics-system", "gz-sim-user-commands-system",
+                   "gz-sim-scene-broadcaster-system", "gz-sim-sensors-system"):
+        assert needed in plugins, f"missing system plugin {needed}"
+    includes = [i.findtext("uri") for i in w.findall("include")]
+    assert "model://iris" in includes, "quadrotor model include missing"
+    g = w.find("gravity")
+    assert g is not None and float(g.text.split()[2]) < 0  # z-down gravity
