@@ -21,6 +21,7 @@ pkill -f gz-sim 2>/dev/null; pkill -f 'ruby.*gz' 2>/dev/null
 sleep 3
 
 cd /root/ardupilot
+rm -f /root/ap_direct.log
 (nohup timeout 400 ./build/sitl/bin/arducopter --model JSON --speedup 1 \
     --serial0=tcp:5760 -I0 > /root/ap_direct.log 2>&1 &)
 echo "[gz-run] SITL(JSON) up, listening 9002/5760"
@@ -47,8 +48,8 @@ while [ $W -lt 75 ]; do
   sleep 5; W=$((W+5))
 done
 if grep -q "JSON received" /root/ap_direct.log 2>/dev/null; then
-  echo "[gz-run] sensors flowing after ~${W}s; giving EKF 15 s"
-  sleep 15
+  echo "[gz-run] sensors flowing after ~${W}s; giving EKF 25 s"
+  sleep 25
 else
   echo "[gz-run] WARNING: no sensor frames in 75 s"
 fi
