@@ -117,7 +117,7 @@ class ArduBridge:
         mapping = getattr(self.master, "mode_mapping", lambda: None)()
         if mapping and name in mapping:
             return int(mapping[name])
-        return {"GUIDED": 15, "LAND": 9, "LOITER": 5, "STABILIZE": 0}.get(name, -1)
+        return {"GUIDED": 15, "LAND": 9, "ACRO": 1, "LOITER": 5, "STABILIZE": 0}.get(name, -1)
 
     def _wait_mode(self, name: str, timeout: float = 20.0) -> None:
         want = self._mode_number(name)
@@ -167,6 +167,9 @@ class ArduBridge:
         time.sleep(TAKEOFF_WAIT_S)
 
     def disarm_and_land(self) -> None:
+        if getattr(self, "deploy", "") == "rate":
+            self.master.set_mode("GUIDED")
+            time.sleep(0.5)
         self.master.set_mode("LAND")
         print("[bridge] LAND")
 
@@ -196,6 +199,14 @@ class ArduBridge:
         law = NonlinearP2Controller(shortest_path=shortest_path(self.scenario))
 
         self.arm_and_takeoff()
+        self.deploy = os.environ.get("DEPLOY", "attitude")
+        if self.deploy == "rate":
+            # ACRO: firmware closes ONLY the rate loop; the paper's law IS the
+            # attitude loop (omega_des), so no tilt clamp and flips rotate
+            # through -- the cascade the paper's Fig. 2 actually describes.
+            self.master.set_mode("ACRO")
+            self._wait_mode("ACRO")
+            print("[bridge] rate-mode deployment (ACRO): paper law = attitude loop")
         print(f"[bridge] scenario {self.scenario} starting")
 
         period = 1.0 / CONTROL_HZ
@@ -237,15 +248,25 @@ class ArduBridge:
                 np.clip(thrust_n / PAPER_VEHICLE.thrust_max_total, 0.0, 1.0)
             )
 
-            q_cmd_ap = quat.conj(q_ref)  # back to ArduPilot's body->world convention
-            self.master.mav.set_attitude_target_send(
-                int(t * 1000),
-                self.master.target_system, self.master.target_component,
-                0,  # use quaternion, rates, and thrust
-                q_cmd_ap.tolist(),
-                float(omega_des[0]), float(omega_des[1]), float(omega_des[2]),
-                thrust_norm,
-            )
+            if self.deploy == "rate":
+                self.master.mav.set_attitude_target_send(
+                    int(t * 1000),
+                    self.master.target_system, self.master.target_component,
+                    0b1000000,  # ignore quaternion: command BODY RATES + thrust
+                    [1.0, 0.0, 0.0, 0.0],
+                    float(omega_des[0]), float(omega_des[1]), float(omega_des[2]),
+                    thrust_norm,
+                )
+            else:
+                q_cmd_ap = quat.conj(q_ref)  # back to ArduPilot's body->world convention
+                self.master.mav.set_attitude_target_send(
+                    int(t * 1000),
+                    self.master.target_system, self.master.target_component,
+                    0,  # use quaternion, rates, and thrust
+                    q_cmd_ap.tolist(),
+                    float(omega_des[0]), float(omega_des[1]), float(omega_des[2]),
+                    thrust_norm,
+                )
 
             self.log.add(
                 t, q_ref, self.q_meas_paper, self.omega_meas_noisy, tau_log, sat.astype(float),
@@ -259,7 +280,8 @@ class ArduBridge:
 
         self.disarm_and_land()
 
-        stamp = f"{self.scenario}_seed{self.rng.integers(0, 1 << 30)}"
+        suffix = "rate" if self.deploy == "rate" else ""
+        stamp = f"{self.scenario}{suffix}_seed{self.rng.integers(0, 1 << 30)}"
         self.log.write(self.out_dir / f"{stamp}.csv")
         plot_run(self.log, self.out_dir)
         return summarize(self.log)
