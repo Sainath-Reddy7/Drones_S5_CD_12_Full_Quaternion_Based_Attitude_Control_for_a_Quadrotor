@@ -46,8 +46,8 @@
 <div class="stacks">
   <div class="card ok"><h3>gym-pybullet-drones</h3><span class="st">&#10003; VALIDATED NATIVELY</span><p>24 kHz control loop, custom paper-vehicle URDF. Step &amp; sine within 0.2&deg; RMS of MuJoCo.</p></div>
   <div class="card ok"><h3>MuJoCo</h3><span class="st">&#10003; VALIDATED NATIVELY</span><p>20 kHz physics, contact floor. All three paper scenarios; flip completes airborne (3 seeds).</p></div>
-  <div class="card ready"><h3>Gazebo</h3><span class="st">&#9679; RUNBOOK-READY (WSL2)</span><p>SDF 1.10 world + ardupilot_gazebo physics; one-shot launch script in sim/gazebo/.</p></div>
-  <div class="card ready"><h3>ArduPilot SITL</h3><span class="st">&#9679; BRIDGE-READY (WSL2)</span><p>MAVLink SET_ATTITUDE_TARGET @ 50 Hz — the controller as an outer loop, exactly as on hardware.</p></div>
+  <div class="card ok"><h3>Gazebo</h3><span class="st">&#10003; VALIDATED (WSL2)</span><p>gz-harmonic + ardupilot_gazebo, real firmware. Sine within 0.4&deg; of the native stacks (17.3&deg;).</p></div>
+  <div class="card ok"><h3>ArduPilot SITL</h3><span class="st">&#10003; VALIDATED (WSL2)</span><p>Real firmware: GUIDED, arm, takeoff, 50 Hz setpoints — position hold keeps drift at 0.03 m.</p></div>
 </div>
 
 <h2>The headline result</h2>
@@ -56,6 +56,12 @@
 <h2>Benchmark — every run (seeds 0&ndash;2 for flips)</h2>
 <table>
 <tr><th>simulator</th><th>scenario</th><th>RMS att. err [deg]</th><th>max att. err [deg]</th><th>settle &phi; [s]</th><th>settle &theta; [s]</th><th>settle &psi; [s]</th><th>torque sat.</th><th>drift [m]</th><th>duration [s]</th></tr>
+<tr><td>ardupilot</td><td>flip</td><td style="color:#cf222e;font-weight:600">66.11</td><td>178.90</td><td>2.28</td><td>0.00</td><td>0.00</td><td>0.34</td><td>0.03</td><td>4.98</td></tr>
+<tr><td>ardupilot</td><td>sine</td><td style="color:#9a6700;font-weight:600">37.71</td><td>56.46</td><td>13.98</td><td>9.98</td><td>5.98</td><td>0.79</td><td>0.03</td><td>14.98</td></tr>
+<tr><td>ardupilot</td><td>step</td><td style="color:#cf222e;font-weight:600">70.99</td><td>96.09</td><td>13.98</td><td>9.98</td><td>5.98</td><td>0.93</td><td>0.03</td><td>14.98</td></tr>
+<tr><td>gazebo</td><td>flip</td><td style="color:#cf222e;font-weight:600">145.11</td><td>179.88</td><td>4.98</td><td>0.00</td><td>4.98</td><td>0.90</td><td>6.21</td><td>4.98</td></tr>
+<tr><td>gazebo</td><td>sine</td><td style="color:#1a7f37;font-weight:600">17.28</td><td>35.65</td><td>12.80</td><td>4.90</td><td>1.80</td><td>0.05</td><td>48.02</td><td>14.98</td></tr>
+<tr><td>gazebo</td><td>step</td><td style="color:#cf222e;font-weight:600">92.63</td><td>179.36</td><td>13.98</td><td>9.98</td><td>5.98</td><td>0.80</td><td>55.66</td><td>14.98</td></tr>
 <tr><td>gym_pybullet</td><td>flip</td><td style="color:#cf222e;font-weight:600">115.19</td><td>179.88</td><td>5.00</td><td>5.00</td><td>5.00</td><td>0.79</td><td>28.19</td><td>5.00</td></tr>
 <tr><td>gym_pybullet</td><td>flip</td><td style="color:#cf222e;font-weight:600">113.82</td><td>179.88</td><td>5.00</td><td>4.47</td><td>5.00</td><td>0.79</td><td>29.11</td><td>5.00</td></tr>
 <tr><td>gym_pybullet</td><td>flip</td><td style="color:#cf222e;font-weight:600">115.72</td><td>179.91</td><td>5.00</td><td>4.70</td><td>5.00</td><td>0.79</td><td>29.05</td><td>5.00</td></tr>
