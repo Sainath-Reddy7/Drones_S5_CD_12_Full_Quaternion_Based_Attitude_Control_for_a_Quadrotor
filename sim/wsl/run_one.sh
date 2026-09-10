@@ -14,8 +14,9 @@ pkill -f arducopter 2>/dev/null; pkill -f sim_vehicle 2>/dev/null; sleep 2
 
 cd /root/ardupilot
 rm -f /root/sitl.log
+tr -d '\r' < /root/drones/sim/wsl/bridge_params.parm > /root/bridge.parm
 nohup timeout 400 Tools/autotest/sim_vehicle.py -v ArduCopter -f quad \
-    --no-mavproxy -w > /root/sitl.log 2>&1 &
+    --no-mavproxy -w --add-defaults=/root/bridge.parm > /root/sitl.log 2>&1 &
 echo "[run_one] SITL booting (25 s for EKF/GPS)..."
 sleep 25
 if ! pgrep -f arducopter >/dev/null; then
