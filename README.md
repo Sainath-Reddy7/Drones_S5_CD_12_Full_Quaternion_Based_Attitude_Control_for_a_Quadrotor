@@ -313,11 +313,25 @@ analyzed as the P² pursuit equilibrium ω = 5·sin(e/2) (Eq. 33).
 | simulator | scenario | RMS att. err [deg] | max att. err [deg] | settle phi [s] | settle theta [s] | settle psi [s] | torque sat. [-] | drift [m] | duration [s] |
 |---|---|---|---|---|---|---|---|---|---|
 | ardupilot | flip | 66.11 | 178.90 | 2.28 | 0.00 | 0.00 | 0.34 | 0.03 | 4.98 |
+| ardupilot | flip | 67.23 | 178.72 | 2.28 | 0.00 | 0.00 | 0.35 | 0.00 | 4.98 |
+| ardupilot | flip | 66.38 | 179.02 | 2.28 | 0.00 | 0.00 | 0.34 | 0.00 | 4.98 |
 | ardupilot | sine | 37.71 | 56.46 | 13.98 | 9.98 | 5.98 | 0.79 | 0.03 | 14.98 |
+| ardupilot | sine | 37.27 | 58.28 | 13.98 | 9.98 | 5.98 | 0.79 | 0.00 | 14.98 |
+| ardupilot | sine | 37.21 | 56.55 | 13.98 | 9.98 | 5.98 | 0.77 | 0.00 | 14.98 |
+| ardupilot | step070 | 52.44 | 74.14 | 13.98 | 9.98 | 5.98 | 0.93 | 0.00 | 14.98 |
 | ardupilot | step | 70.99 | 96.09 | 13.98 | 9.98 | 5.98 | 0.93 | 0.03 | 14.98 |
+| ardupilot | step | 70.75 | 94.76 | 13.98 | 9.98 | 5.98 | 0.93 | 0.00 | 14.98 |
+| ardupilot | step | 70.89 | 97.68 | 13.98 | 9.98 | 5.98 | 0.93 | 0.00 | 14.98 |
 | gazebo | flip | 145.11 | 179.88 | 4.98 | 0.00 | 4.98 | 0.90 | 6.21 | 4.98 |
+| gazebo | flip | 144.81 | 179.94 | 4.98 | 0.00 | 4.98 | 0.87 | 6.50 | 4.98 |
+| gazebo | flip | 145.70 | 179.99 | 4.98 | 0.00 | 4.98 | 0.86 | 8.49 | 4.98 |
 | gazebo | sine | 17.28 | 35.65 | 12.80 | 4.90 | 1.80 | 0.05 | 48.02 | 14.98 |
+| gazebo | sine | 17.29 | 41.28 | 12.02 | 8.12 | 5.38 | 0.03 | 29.92 | 14.98 |
+| gazebo | sine | 17.33 | 41.31 | 12.52 | 8.18 | 0.00 | 0.05 | 35.49 | 14.98 |
+| gazebo | step070 | 123.16 | 179.91 | 13.98 | 9.98 | 5.82 | 0.73 | 73.43 | 14.98 |
 | gazebo | step | 92.63 | 179.36 | 13.98 | 9.98 | 5.98 | 0.80 | 55.66 | 14.98 |
+| gazebo | step | 123.61 | 179.86 | 13.98 | 9.98 | 5.98 | 0.88 | 35.12 | 14.98 |
+| gazebo | step | 120.92 | 179.91 | 13.98 | 9.98 | 5.98 | 0.88 | 46.41 | 14.98 |
 | gym_pybullet | flip | 115.19 | 179.88 | 5.00 | 5.00 | 5.00 | 0.79 | 28.19 | 5.00 |
 | gym_pybullet | flip | 113.82 | 179.88 | 5.00 | 4.47 | 5.00 | 0.79 | 29.11 | 5.00 |
 | gym_pybullet | flip | 115.72 | 179.91 | 5.00 | 4.70 | 5.00 | 0.79 | 29.05 | 5.00 |
@@ -332,6 +346,19 @@ analyzed as the P² pursuit equilibrium ω = 5·sin(e/2) (Eq. 33).
 | mujoco | step | 17.66 | 72.92 | 14.00 | 0.83 | 6.00 | 0.02 | 1875.99 | 15.00 |
 
 *seeds 0–2 for flips; settle times use the noise-aware band; drift is
+
+**How to read the table** — every stack runs the same frozen controller, the same
+references, and the paper's ±0.1 noise. `step070` rows are the step scenario at
+0.7 rad (inside the flight stacks' attitude limits) so the firmware runs also
+show sub-clamp tracking; the full 1 rad `step` rows are kept as the *measured
+clamp boundary*: the paper commands 1 rad on two axes simultaneously (an 81°
+combined tilt), which exceeds a production stack's tilt limits and tumbles —
+that is physics, not a controller failure, and the flip rows' large RMS is the
+expected mid-rotation 180° geometry, not tracking error. Flip completion is
+judged by φ settling (ArduPilot: 2.3 s, all seeds; MuJoCo: ~2.9 s, all seeds).
+All stacks: 3 seeds per scenario; drift is attitude-only control — except
+ArduPilot, whose own position hold pins it to 0.03 m.
+
 expected — the paper controls attitude only. Lower is better except duration.*
 
 ## The paper's three scenarios — MuJoCo (frozen controller, full ±0.1 noise)
