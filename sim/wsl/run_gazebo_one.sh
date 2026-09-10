@@ -17,7 +17,8 @@ REPO=/root/drones
 
 echo "[gz-run] scenario=$SCEN duration=$DUR seed=$SEED"
 pkill -f arducopter 2>/dev/null; pkill -f 'gz sim' 2>/dev/null; pkill -f sim_vehicle 2>/dev/null
-sleep 2
+pkill -f gz-sim 2>/dev/null; pkill -f 'ruby.*gz' 2>/dev/null
+sleep 3
 
 cd /root/ardupilot
 (nohup timeout 400 ./build/sitl/bin/arducopter --model JSON --speedup 1 \
