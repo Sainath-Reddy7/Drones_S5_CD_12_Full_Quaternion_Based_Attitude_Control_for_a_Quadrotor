@@ -22,9 +22,10 @@ sleep 3
 
 cd /root/ardupilot
 rm -f /root/ap_direct.log
+tr -d '\r' < /root/drones/sim/wsl/bridge_params.parm > /root/bridge.parm
 (nohup timeout 400 ./build/sitl/bin/arducopter --model JSON --speedup 1 \
     --serial0=tcp:5760 \
-    --defaults=/root/ardupilot/Tools/autotest/default_params/copter.parm,/root/ardupilot/Tools/autotest/default_params/gazebo-iris.parm \
+    --defaults=/root/ardupilot/Tools/autotest/default_params/copter.parm,/root/ardupilot/Tools/autotest/default_params/gazebo-iris.parm,/root/bridge.parm \
     -I0 > /root/ap_direct.log 2>&1 &)
 echo "[gz-run] SITL(JSON) up, listening 9002/5760"
 sleep 8
