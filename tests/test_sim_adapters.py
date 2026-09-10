@@ -111,6 +111,8 @@ def test_gazebo_world_is_valid_sdf():
                    "gz-sim-scene-broadcaster-system", "gz-sim-sensors-system"):
         assert needed in plugins, f"missing system plugin {needed}"
     includes = [i.findtext("uri") for i in w.findall("include")]
-    assert "model://iris" in includes, "quadrotor model include missing"
+    # the ardupilot_gazebo model with the flight-stack plugin embedded; plain
+    # `model://iris` does not exist in their models dir (validated in WSL2)
+    assert "model://iris_with_ardupilot" in includes, "quadrotor model include missing"
     g = w.find("gravity")
     assert g is not None and float(g.text.split()[2]) < 0  # z-down gravity
