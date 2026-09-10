@@ -135,14 +135,24 @@ class ArduBridge:
         mav, mu = self.master, self.mavutil
         mav.set_mode("GUIDED")
         self._wait_mode("GUIDED")
-        # real firmware needs EKF/GPS readiness before arming -- retry
+        # real firmware needs EKF/GPS readiness before arming -- retry and
+        # surface whatever pre-arm check is complaining (STATUSTEXT)
+        self.master.mav.command_long_send(
+            self.master.target_system, self.master.target_component,
+            self.mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
+            self.mavutil.mavlink.MAVLINK_MSG_ID_STATUSTEXT, 200000,
+            0.0, 0.0, 0.0, 0.0, 0.0,
+        )
         t0 = time.time()
-        while time.time() - t0 < 45.0:
+        while time.time() - t0 < 90.0:
             self.master.arducopter_arm()
+            txt = self.master.recv_match(type="STATUSTEXT", blocking=True, timeout=1.5)
+            if txt is not None:
+                print(f"[bridge] stack says: {txt.text}")
             if self._is_armed():
                 print(f"[bridge] armed after {time.time() - t0:.0f}s")
                 break
-            time.sleep(2.0)
+            time.sleep(1.5)
         else:
             raise TimeoutError("flight stack refused to arm (EKF/GPS not ready)")
         mav.mav.command_long_send(
