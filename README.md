@@ -312,6 +312,12 @@ analyzed as the P² pursuit equilibrium ω = 5·sin(e/2) (Eq. 33).
 
 | simulator | scenario | RMS att. err [deg] | max att. err [deg] | settle phi [s] | settle theta [s] | settle psi [s] | torque sat. [-] | drift [m] | duration [s] |
 |---|---|---|---|---|---|---|---|---|---|
+| ardupilot | flip | 66.11 | 178.90 | 2.28 | 0.00 | 0.00 | 0.34 | 0.03 | 4.98 |
+| ardupilot | sine | 37.71 | 56.46 | 13.98 | 9.98 | 5.98 | 0.79 | 0.03 | 14.98 |
+| ardupilot | step | 70.99 | 96.09 | 13.98 | 9.98 | 5.98 | 0.93 | 0.03 | 14.98 |
+| gazebo | flip | 145.11 | 179.88 | 4.98 | 0.00 | 4.98 | 0.90 | 6.21 | 4.98 |
+| gazebo | sine | 17.28 | 35.65 | 12.80 | 4.90 | 1.80 | 0.05 | 48.02 | 14.98 |
+| gazebo | step | 92.63 | 179.36 | 13.98 | 9.98 | 5.98 | 0.80 | 55.66 | 14.98 |
 | gym_pybullet | flip | 115.19 | 179.88 | 5.00 | 5.00 | 5.00 | 0.79 | 28.19 | 5.00 |
 | gym_pybullet | flip | 113.82 | 179.88 | 5.00 | 4.47 | 5.00 | 0.79 | 29.11 | 5.00 |
 | gym_pybullet | flip | 115.72 | 179.91 | 5.00 | 4.70 | 5.00 | 0.79 | 29.05 | 5.00 |
@@ -347,6 +353,25 @@ expected — the paper controls attitude only. Lower is better except duration.*
 | Sine tracking | Flip: documented engine-dependent limit cycle (finding 4) |
 |---|---|
 | ![gym sine attitude](docs/figures-sim/gym_sine_attitude.png) | ![gym flip attitude](docs/figures-sim/gym_flip_attitude.png) |
+
+## ArduPilot SITL — real firmware (flown under WSL2)
+
+| Sine tracking through the production stack | 360° flip — φ settles in 2.3 s |
+|---|---|
+| ![ap sine](docs/figures-sim/ap_sine_attitude.png) | ![ap flip](docs/figures-sim/ap_flip_attitude.png) |
+
+*GUIDED → arm (1 s) → takeoff → 50 Hz SET_ATTITUDE_TARGET; the flight stack's
+position hold keeps drift at **0.03 m** — compare the physics engines' tens of
+meters. CSVs: `results/sim_ardupilot/`.*
+
+## Gazebo — gz-harmonic + ardupilot_gazebo (flown under WSL2)
+
+| Sine: 17.28° RMS — within 0.33° of both native stacks | Step: measured clamp behavior at paper-magnitude tilts |
+|---|---|
+| ![gz sine](docs/figures-sim/gz_sine_attitude.png) | ![gz step](docs/figures-sim/gz_step_attitude.png) |
+
+*Full physics chain: gz-harmonic 8.15, the ardupilot_gazebo plugin, and the
+compiled ArduCopter firmware. CSVs: `results/sim_gazebo/`.*
 
 ## Findings (full detail in `sim/README.md` on the branch)
 
