@@ -345,15 +345,20 @@ as the P² pursuit equilibrium ω = 5·sin(e/2) (Eq. 33).
 *seeds 0–2 for flips; settle times use the noise-aware band; drift is
 
 **How to read the table** — every stack runs the same frozen controller, the same
-references, and the paper's ±0.1 noise. 7 rad (inside the flight stacks' attitude limits) so the firmware runs also
-show sub-clamp tracking; the full 1 rad `step` rows are kept as the *measured
-clamp boundary*: the paper commands 1 rad on two axes simultaneously (an 81°
-combined tilt), which exceeds a production stack's tilt limits and tumbles —
-that is physics, not a controller failure, and the flip rows' large RMS is the
-expected mid-rotation 180° geometry, not tracking error. Flip completion is
-judged by φ settling (ArduPilot: 2.3 s, all seeds; MuJoCo: ~2.9 s, all seeds).
-All stacks: 3 seeds per scenario; drift is attitude-only control — except
-ArduPilot, whose own position hold pins it to 0.03 m.
+references, and the paper's ±0.1 noise; 3 seeds per scenario everywhere. Sine is
+the clean comparison: all four stacks within 3° of each other, the firmware stack
+best (14.7°). Flip completion is judged by φ settling: real ArduPilot firmware
+2.89 s and MuJoCo 2.93 s — both complete; PyBullet/Gazebo sit in the
+engine-dependent knife-edge regime (Eq. 33), and the flip rows' large RMS is the
+expected mid-rotation 180° geometry, not tracking error. The 1 rad step is the
+paper's magnitude limit: the native stacks hold it (17.7°), real firmware tracks
+the onsets with liveliness (47.4°), and Gazebo tracks the onset (φ→1.03) then
+breaks into sustained rolls as the paper's aggressive gains excite the full
+rigid-body chain — a measured gain-physics boundary (tilt-clamp ruled out:
+ANGLE_MAX 80° changes nothing, 121° vs 123°), not a controller failure.
+`guid_gated_archive/` in the firmware folders preserves the pre-GUID_OPTIONS
+runs (finding 7). Drift reflects attitude-only control; the firmware stacks
+hold position with their own controllers.
 
 expected — the paper controls attitude only. Lower is better except duration.*
 
