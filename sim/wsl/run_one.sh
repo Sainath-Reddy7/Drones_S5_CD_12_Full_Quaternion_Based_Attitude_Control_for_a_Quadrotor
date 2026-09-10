@@ -15,10 +15,14 @@ pkill -f arducopter 2>/dev/null; pkill -f sim_vehicle 2>/dev/null; sleep 2
 cd /root/ardupilot
 rm -f /root/sitl.log
 tr -d '\r' < /root/drones/sim/wsl/bridge_params.parm > /root/bridge.parm
-nohup timeout 400 Tools/autotest/sim_vehicle.py -v ArduCopter -f quad \
-    --no-mavproxy -w --add-defaults=/root/bridge.parm > /root/sitl.log 2>&1 &
-echo "[run_one] SITL booting (25 s for EKF/GPS)..."
-sleep 25
+# direct binary (same pattern as the gazebo runner): internal SITL physics,
+# copter defaults + our bridge params (GUID_OPTIONS=1 is the SET_ATTITUDE_TARGET gate)
+(nohup timeout 400 ./build/sitl/bin/arducopter --model + --speedup 1 \
+    --serial0=tcp:5760 \
+    --defaults=/root/ardupilot/Tools/autotest/default_params/copter.parm,/root/bridge.parm \
+    -I0 > /root/sitl.log 2>&1 &)
+echo "[run_one] SITL booting (20 s for EKF/GPS)..."
+sleep 20
 if ! pgrep -f arducopter >/dev/null; then
   echo "[run_one] SITL FAILED TO START"; tail -5 /root/sitl.log; exit 1
 fi
