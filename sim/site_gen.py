@@ -124,8 +124,8 @@ def build_index(rows: str) -> str:
 <div class="stacks">
   <div class="card ok"><h3>gym-pybullet-drones</h3><span class="st">&#10003; VALIDATED NATIVELY</span><p>24 kHz control loop, custom paper-vehicle URDF. Step &amp; sine within 0.2&deg; RMS of MuJoCo.</p></div>
   <div class="card ok"><h3>MuJoCo</h3><span class="st">&#10003; VALIDATED NATIVELY</span><p>20 kHz physics, contact floor. All three paper scenarios; flip completes airborne (3 seeds).</p></div>
-  <div class="card ok"><h3>Gazebo</h3><span class="st">&#10003; VALIDATED (WSL2)</span><p>gz-harmonic + ardupilot_gazebo, real firmware. Sine within 0.4&deg; of the native stacks (17.3&deg;).</p></div>
-  <div class="card ok"><h3>ArduPilot SITL</h3><span class="st">&#10003; VALIDATED (WSL2)</span><p>Real firmware: GUIDED, arm, takeoff, 50 Hz setpoints — position hold keeps drift at 0.03 m.</p></div>
+  <div class="card ok"><h3>Gazebo</h3><span class="st">&#10003; VALIDATED (WSL2)</span><p>gz-harmonic + ardupilot_gazebo, real firmware, 3 seeds. Sine 17.3&deg; &plusmn; 0.0 — within 0.3&deg; of the native stacks.</p></div>
+  <div class="card ok"><h3>ArduPilot SITL</h3><span class="st">&#10003; VALIDATED (WSL2)</span><p>Real firmware, 3 seeds: sine 14.7&deg; &plusmn; 0.2 — best of all four stacks; flip settles 2.89 s.</p></div>
 </div>
 
 <h2>The headline result</h2>
