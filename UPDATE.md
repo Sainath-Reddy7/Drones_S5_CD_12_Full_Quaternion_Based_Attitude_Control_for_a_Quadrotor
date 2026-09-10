@@ -19,8 +19,8 @@ Milestone M1 = bridge + the two native adapters; M2 = Gazebo + ArduPilot.
 |---|---|---|
 | **MuJoCo** (20 kHz, contact physics) | ✅ **validated natively** | all 3 paper scenarios; flip completes fully airborne (3 seeds, φ settles 2.87–2.97 s); CSVs + figures in `results/sim_mujoco/` |
 | **gym-pybullet-drones** (24 kHz, custom paper-vehicle URDF) | ✅ **validated natively** | step/sine within **0.2° RMS of MuJoCo**; flip = documented engine finding; `results/sim_gym_pybullet/` |
-| **Gazebo** (gz-sim SDF 1.10 + ardupilot_gazebo) | 🟦 **built + validated file-level**; firmware run needs WSL2 | world + one-shot script + runbook (`sim/gazebo/`); SDF guarded by test |
-| **ArduPilot SITL** (MAVLink, SET_ATTITUDE_TARGET @ 50 Hz) | 🟦 **bridge protocol-validated end-to-end**; firmware run needs WSL2 | bridge flown against a MAVLink-speaking SITL stand-in: GUIDED → arm → takeoff → 50 Hz setpoints → telemetry → convergence (`tests/test_bridge_mavlink.py`, `sim/ardupilot/mock_sitl.py`) |
+| **Gazebo** (gz-harmonic 8.15 + ardupilot_gazebo + real firmware) | ✅ **VALIDATED — flown under WSL2** | full chain run: `sim/wsl/run_gazebo_one.sh`; all 3 scenarios; sine = 17.28° RMS, within 0.4° of the native stacks |
+| **ArduPilot SITL** (real firmware, MAVLink SET_ATTITUDE_TARGET @ 50 Hz) | ✅ **VALIDATED — flown under WSL2** | compiled ArduCopter from source; arm at 1 s, takeoff, 3 scenarios; position hold holds drift to 0.03 m |
 
 ## Headline results
 
@@ -58,7 +58,8 @@ Plus the live site: four-stack status cards → benchmark table → figures →
 
 ## Next (to final evaluation)
 
-1. Run Gazebo + ArduPilot firmware under WSL2 — runbooks ready, ~1–2 h
-   (`sim/gazebo/README.md`); fills the last two benchmark rows.
+1. ~~Run Gazebo + ArduPilot firmware~~ ✅ **done** — both flown under WSL2
+   (Ubuntu 24.04, gz-harmonic, ArduCopter built from source; see
+   `sim/wsl/`).
 2. Merge `sainath/sim-deployment` → `main` for the final evaluation, per the
    course's branch rules.

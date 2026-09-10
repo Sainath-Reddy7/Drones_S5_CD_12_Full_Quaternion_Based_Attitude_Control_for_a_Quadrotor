@@ -7,6 +7,12 @@ duration. settle_* use the noise-aware band (max(5%, 2*noise)) on the
 
 | simulator | scenario | RMS att. err [deg] | max att. err [deg] | settle phi [s] | settle theta [s] | settle psi [s] | torque sat. [-] | drift [m] | duration [s] |
 |---|---|---|---|---|---|---|---|---|---|
+| ardupilot | flip | 66.11 | 178.90 | 2.28 | 0.00 | 0.00 | 0.34 | 0.03 | 4.98 |
+| ardupilot | sine | 37.71 | 56.46 | 13.98 | 9.98 | 5.98 | 0.79 | 0.03 | 14.98 |
+| ardupilot | step | 70.99 | 96.09 | 13.98 | 9.98 | 5.98 | 0.93 | 0.03 | 14.98 |
+| gazebo | flip | 145.11 | 179.88 | 4.98 | 0.00 | 4.98 | 0.90 | 6.21 | 4.98 |
+| gazebo | sine | 17.28 | 35.65 | 12.80 | 4.90 | 1.80 | 0.05 | 48.02 | 14.98 |
+| gazebo | step | 92.63 | 179.36 | 13.98 | 9.98 | 5.98 | 0.80 | 55.66 | 14.98 |
 | gym_pybullet | flip | 115.19 | 179.88 | 5.00 | 5.00 | 5.00 | 0.79 | 28.19 | 5.00 |
 | gym_pybullet | flip | 113.82 | 179.88 | 5.00 | 4.47 | 5.00 | 0.79 | 29.11 | 5.00 |
 | gym_pybullet | flip | 115.72 | 179.91 | 5.00 | 4.70 | 5.00 | 0.79 | 29.05 | 5.00 |

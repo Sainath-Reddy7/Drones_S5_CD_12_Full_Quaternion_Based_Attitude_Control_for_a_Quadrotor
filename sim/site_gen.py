@@ -124,8 +124,8 @@ def build_index(rows: str) -> str:
 <div class="stacks">
   <div class="card ok"><h3>gym-pybullet-drones</h3><span class="st">&#10003; VALIDATED NATIVELY</span><p>24 kHz control loop, custom paper-vehicle URDF. Step &amp; sine within 0.2&deg; RMS of MuJoCo.</p></div>
   <div class="card ok"><h3>MuJoCo</h3><span class="st">&#10003; VALIDATED NATIVELY</span><p>20 kHz physics, contact floor. All three paper scenarios; flip completes airborne (3 seeds).</p></div>
-  <div class="card ready"><h3>Gazebo</h3><span class="st">&#9679; RUNBOOK-READY (WSL2)</span><p>SDF 1.10 world + ardupilot_gazebo physics; one-shot launch script in sim/gazebo/.</p></div>
-  <div class="card ready"><h3>ArduPilot SITL</h3><span class="st">&#9679; BRIDGE-READY (WSL2)</span><p>MAVLink SET_ATTITUDE_TARGET @ 50 Hz — the controller as an outer loop, exactly as on hardware.</p></div>
+  <div class="card ok"><h3>Gazebo</h3><span class="st">&#10003; VALIDATED (WSL2)</span><p>gz-harmonic + ardupilot_gazebo, real firmware. Sine within 0.4&deg; of the native stacks (17.3&deg;).</p></div>
+  <div class="card ok"><h3>ArduPilot SITL</h3><span class="st">&#10003; VALIDATED (WSL2)</span><p>Real firmware: GUIDED, arm, takeoff, 50 Hz setpoints — position hold keeps drift at 0.03 m.</p></div>
 </div>
 
 <h2>The headline result</h2>
