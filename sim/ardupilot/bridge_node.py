@@ -167,9 +167,6 @@ class ArduBridge:
         time.sleep(TAKEOFF_WAIT_S)
 
     def disarm_and_land(self) -> None:
-        if getattr(self, "deploy", "") == "rate":
-            self.master.set_mode("GUIDED")
-            time.sleep(0.5)
         self.master.set_mode("LAND")
         print("[bridge] LAND")
 
@@ -201,12 +198,11 @@ class ArduBridge:
         self.arm_and_takeoff()
         self.deploy = os.environ.get("DEPLOY", "attitude")
         if self.deploy == "rate":
-            # ACRO: firmware closes ONLY the rate loop; the paper's law IS the
-            # attitude loop (omega_des), so no tilt clamp and flips rotate
-            # through -- the cascade the paper's Fig. 2 actually describes.
-            self.master.set_mode("ACRO")
-            self._wait_mode("ACRO")
-            print("[bridge] rate-mode deployment (ACRO): paper law = attitude loop")
+            # Stay in GUIDED: Copter handles SET_ATTITUDE_TARGET there. With the
+            # quaternion masked out (type_mask 64) the firmware closes ONLY the
+            # rate loop -- the paper's law IS the attitude loop (omega_des), so
+            # the GUIDED tilt clamp no longer applies and flips rotate through.
+            print("[bridge] rate-mode deployment (GUIDED, rate-only targets)")
         print(f"[bridge] scenario {self.scenario} starting")
 
         period = 1.0 / CONTROL_HZ
