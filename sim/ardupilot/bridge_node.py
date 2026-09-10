@@ -249,12 +249,16 @@ class ArduBridge:
             )
 
             if self.deploy == "rate":
+                # body rates are the MIRROR of the paper frame (same reason the
+                # quaternion needs conj): positive AP roll rate increases phi,
+                # positive paper-frame rate decreases it
+                omega_ap = -omega_des
                 self.master.mav.set_attitude_target_send(
                     int(t * 1000),
                     self.master.target_system, self.master.target_component,
                     0b1000000,  # ignore quaternion: command BODY RATES + thrust
                     [1.0, 0.0, 0.0, 0.0],
-                    float(omega_des[0]), float(omega_des[1]), float(omega_des[2]),
+                    float(omega_ap[0]), float(omega_ap[1]), float(omega_ap[2]),
                     thrust_norm,
                 )
             else:
