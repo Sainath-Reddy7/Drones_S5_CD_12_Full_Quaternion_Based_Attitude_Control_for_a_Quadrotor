@@ -31,6 +31,7 @@ Usage (SITL must already be running):
 from __future__ import annotations
 
 import argparse
+import os
 import time
 from pathlib import Path
 
@@ -209,7 +210,10 @@ class ArduBridge:
 
             self.pump_state()
 
-            q_ref = reference_quat(self.scenario, t)  # paper convention
+            q_ref = reference_quat(
+                self.scenario, t,
+                step_amp=float(os.environ.get("STEP_AMP", "1.0")),
+            )  # paper convention
 
             # eq. (20) error for the rate-setpoint equivalence
             q_err = quat.mul(q_ref, self.q_meas_paper)

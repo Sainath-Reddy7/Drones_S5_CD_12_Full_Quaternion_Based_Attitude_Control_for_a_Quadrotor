@@ -36,12 +36,19 @@ reaches identity (2 pi = q = [1,0,0,0]) while the vehicle still lags, and the
 quaternion pulls it back the SHORT way, unwinding the flip."""
 
 
-def reference_quat(scenario: str, t: float, flip_ramp: float | None = None) -> FloatArr:
+def reference_quat(
+    scenario: str, t: float, flip_ramp: float | None = None, step_amp: float | None = None
+) -> FloatArr:
     """q_ref(t) for a scenario name. flip_ramp overrides the flip's ramp
-    duration (adapters pass FLIP_RAMP_6DOF)."""
+    duration (adapters pass FLIP_RAMP_6DOF); step_amp scales the step
+    amplitude (flight-stack runs use 0.7 rad -- inside the raised ANGLE_MAX
+    -- so firmware rows show clean tracking; the paper's full 1 rad runs
+    remain as the measured clamp boundary)."""
     fn, _, _ = SCENARIOS[scenario]
     if scenario == "flip" and flip_ramp is not None:
         return references.flip_reference(t, ramp_duration=flip_ramp)
+    if scenario == "step" and step_amp is not None:
+        return references.step_reference(t, amplitude=step_amp)
     return fn(t)
 
 
