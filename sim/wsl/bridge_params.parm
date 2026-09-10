@@ -4,6 +4,6 @@
 # measured: phi held ~0 for an entire 1-rad step run).
 GUID_OPTIONS	1
 # paper references command 57.3 deg per axis (73 deg combined tilt)
-ANGLE_MAX	8000
+ANGLE_MAX	6000
 # bare-default SITL has no RC/GCS prearm context
 ARMING_CHECK	0
