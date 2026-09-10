@@ -64,4 +64,14 @@ RC=$?
 
 pkill -f arducopter 2>/dev/null; pkill -f 'gz sim' 2>/dev/null; pkill -f sim_vehicle 2>/dev/null
 echo "[gz-run] bridge exit=$RC"
+# file this run's CSV into the stack inbox (deterministic collection)
+mkdir -p /root/inbox_gz
+latest=$(ls -t "$REPO"/results/*.csv 2>/dev/null | head -1)
+if [ -n "$latest" ]; then
+  tag="${SCEN}"
+  [ "${STEP_AMP:-1.0}" = "0.7" ] && tag="step070"
+  cp "$latest" "/root/inbox_gz/tag_${tag}_seed${SEED}.csv"
+  echo "[gz-run] filed tag_${tag}_seed${SEED}.csv"
+fi
+
 exit $RC
