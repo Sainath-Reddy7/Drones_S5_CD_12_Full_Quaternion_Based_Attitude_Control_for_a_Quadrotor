@@ -92,19 +92,22 @@ class ArduBridge:
                 self.mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
                 msg_id, int(1e6 / hz), 0.0, 0.0, 0.0, 0.0, 0.0,
             )
-        # the paper's references command 1 rad (57.3 deg) tilts and a 360 deg
-        # flip; ArduPilot's stock ANGLE_MAX is 45 deg -- raise it or the
-        # flight stack silently clamps our setpoints (centidegrees)
+        self._set_param("ANGLE_MAX", 6000)   # paper refs are 57.3+ deg; stock clamps at 45
+        self._set_param("ARMING_CHECK", 0)   # bare-default SITL has no RC/GCS prearm context
+
+    def _set_param(self, name: str, value: float) -> None:
+        """Version-robust PARAM_SET (pymavlink changed signatures and the
+        param-name type across versions)."""
         try:
             self.master.param_set_send(
-                "ANGLE_MAX", 6000,
+                name, value,
                 self.master.target_system, self.master.target_component,
             )
-        except TypeError:  # newer pymavlink: targets optional, name may be bytes
+        except TypeError:
             try:
-                self.master.param_set_send("ANGLE_MAX", 6000)
+                self.master.param_set_send(name, value)
             except AttributeError:
-                self.master.param_set_send(b"ANGLE_MAX", 6000)
+                self.master.param_set_send(name.encode(), value)
 
     def _mode_number(self, name: str) -> int:
         # the name->number mapping moved across pymavlink versions; use the
