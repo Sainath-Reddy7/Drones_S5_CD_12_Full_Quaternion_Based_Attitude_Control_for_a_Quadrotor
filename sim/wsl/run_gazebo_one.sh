@@ -38,6 +38,21 @@ if ! pgrep -f arducopter >/dev/null; then
 fi
 echo "[gz-run] stack up: FDM=$(ss -tn | grep -c 9002) 5760=$(ss -ltn | grep -c 5760)"
 
+# the gz plugin can take tens of seconds before its first sensor frame; the
+# EKF then needs ~15 s more. Gate on it or the bridge wastes its arm window.
+echo "[gz-run] waiting for gz sensor stream..."
+W=0
+while [ $W -lt 75 ]; do
+  if grep -q "JSON received" /root/ap_direct.log 2>/dev/null; then break; fi
+  sleep 5; W=$((W+5))
+done
+if grep -q "JSON received" /root/ap_direct.log 2>/dev/null; then
+  echo "[gz-run] sensors flowing after ~${W}s; giving EKF 15 s"
+  sleep 15
+else
+  echo "[gz-run] WARNING: no sensor frames in 75 s"
+fi
+
 cd "$REPO"
 timeout 250 python3 -m sim.ardupilot.bridge_node \
     --scenario "$SCEN" --duration "$DUR" --seed "$SEED" --noise "$NOISE" \
