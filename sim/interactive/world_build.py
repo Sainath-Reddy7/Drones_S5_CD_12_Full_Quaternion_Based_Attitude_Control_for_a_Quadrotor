@@ -70,6 +70,9 @@ for i in range(96):
 for i in range(24):
     MARKERS += f'    <geom name="mk_w{i}" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>\n'
 MARKERS += '    <geom name="mk_target" type="sphere" size="0.22" pos="0 0 -10" rgba="1 0.2 0.2 1" contype="0" conaffinity="0"/>\n'
+# trail markers (blue): the drone's actual path behind it
+for i in range(48):
+    MARKERS += f'    <geom name="mk_t{i}" type="sphere" size="0.06" pos="0 0 -10" rgba="0.2 0.5 1 0.85" contype="0" conaffinity="0"/>\n'
 
 FOOTER = "  </worldbody>\n</mujoco>\n"
 
