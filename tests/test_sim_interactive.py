@@ -44,7 +44,7 @@ def test_both_environments_load_with_inventory(env):
     assert m.body_mass[sim.bid] == 0.2
     assert np.allclose(m.body_inertia[sim.bid], [6.5e-4, 6.5e-4, 1.2e-3])
     names = _names(sim)
-    assert sum(1 for n in names if n and n.startswith("mk_")) == 121
+    assert sum(1 for n in names if n and n.startswith("mk_")) == 169
     wheels = sum(1 for n in names if n and "_w" in n and ("car_" in n or "truck_" in n))
     assert wheels >= 24, f"wheels={wheels}"          # real wheeled vehicles
     assert any(n and n.endswith("_cabin") for n in names)
