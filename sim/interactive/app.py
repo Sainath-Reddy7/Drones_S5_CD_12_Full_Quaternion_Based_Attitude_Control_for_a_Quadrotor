@@ -150,6 +150,8 @@ class DroneSim:
         self.data.qvel[self._vadr:self._vadr + 6] = 0
 
     def reset(self) -> None:
+        if hasattr(self, "_saved_gravity"):
+            self.model.opt.gravity[:] = self._saved_gravity
         self.set_drone(SPAWN)
         for _, b, y0 in self._traffic:
             self.data.qpos[self.model.jnt_dofadr[self.model.body_jntadr[b]] + 1] = y0
@@ -260,6 +262,12 @@ class DroneSim:
         self._hide_markers()
         alt0 = cfg.PAPER_TESTS[name]["start_alt"] if name == "flip" else max(2.0, self.read_state()["pos"][2])
         self.refs.update(roll=0.0, pitch=0.0, z=alt0)
+        # THE PAPER'S EXACT PLANT: eqs (17)-(18) are attitude-only with NO
+        # gravity torque and NO translational dynamics. Zero gravity during
+        # paper tests so MuJoCo integrates the same plant the paper does —
+        # a pure rotational double-integrator. (Restored when test ends.)
+        self._saved_gravity = self.model.opt.gravity.copy()
+        self.model.opt.gravity[:] = [0, 0, 0]
 
     def guidance(self) -> None:
         s = self.read_state()
@@ -293,6 +301,8 @@ class DroneSim:
             if t >= spec["duration"]:
                 self._thrust_override = self._paper_qref = None
                 self.mission = "HOLD"
+                if hasattr(self, "_saved_gravity"):
+                    self.model.opt.gravity[:] = self._saved_gravity
             return
         self.track_t += POLL_EVERY / self.rate
         ref_p, ref_yaw, _ = self._track_ref(self.track_t)
@@ -337,8 +347,17 @@ class DroneSim:
         tau, _ = self.bridge.torque(q_ref, q_m, s["omg"])
         R = quat.to_dcm(s["q"])
         tilt = float(np.clip(R[2, 2], -1, 1))
-        thrust = self.alt.thrust(self.refs["z"], s["pos"][2], s["vel"][2], tilt,
-                                 MASS, PAPER_VEHICLE.thrust_max_total, CTRL_EVERY / self.rate)
+        if self.lock_position:
+            # Position is LOCKED: the pin handles gravity/position, so the
+            # altitude controller is both unnecessary and harmful (its
+            # integrator fights the lock and eats the mixer's thrust headroom
+            # that the attitude loop needs for large tilts like the paper's
+            # 1-rad dual-axis step). Simple hover thrust + full torque
+            # authority = the paper's pure attitude plant.
+            thrust = MASS * G
+        else:
+            thrust = self.alt.thrust(self.refs["z"], s["pos"][2], s["vel"][2], tilt,
+                                     MASS, PAPER_VEHICLE.thrust_max_total, CTRL_EVERY / self.rate)
         if self._thrust_override is not None:
             thrust = self._thrust_override
         thrusts, desat = self.bridge.mix(thrust, tau)
@@ -460,6 +479,8 @@ class DroneSim:
             print(f"  csv saved (plots skipped: {e})")
 
     def switch_mode(self) -> None:
+        if hasattr(self, "_saved_gravity"):
+            self.model.opt.gravity[:] = self._saved_gravity
         s = self.read_state()
         self.refs.update(roll=float(s["rpy_sim"][0]), pitch=float(s["rpy_sim"][1]),
                          yaw=float(s["rpy_sim"][2]), z=float(s["pos"][2]))
