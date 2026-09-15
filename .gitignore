@@ -18,3 +18,5 @@ mm.tar.bz2
 info/
 deploy/.vercel/
 deploy/.env.local
+sim/interactive/collisions.csv
+sim/interactive/logs/
