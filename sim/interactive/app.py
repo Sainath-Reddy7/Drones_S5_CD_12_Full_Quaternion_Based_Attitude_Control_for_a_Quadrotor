@@ -1,32 +1,27 @@
-"""INTERACTIVE MUJOCO DRONE SIMULATOR -- clean keys, colored paths.
+"""INTERACTIVE MUJOCO DRONE SIMULATOR -- the paper's 3 tests, one keypress.
 
-FLIGHT KEYS (held - continuous control, NEVER used for anything else):
-    W/S = forward/back    A/D = left/right    Q/E = yaw left/right
-    R/F = climb/descend   SPACE = hover (capture position)
+THE PAPER'S 3 BENCHMARK TESTS (work from ANY mode, just press the key):
+    1 = STEP test   (1 rad attitude steps on roll/pitch/yaw)
+    2 = SINE test   (smooth 0.5 rad wave tracking under noise)
+    3 = FLIP test   (360-degree rotation -- no gimbal lock)
 
-MODE COMMANDS (one-shot taps - no overlap with flight keys):
-    M     = toggle MANUAL <-> OUR CONTROL
-    G     = waypoint mission        U = circle path
-    J     = figure-8 path           L = straight line
-    1/2/3 = paper STEP/SINE/FLIP (base paper, live)
-    H     = hold position           N = land
-    X     = abort mission           P = pause/resume
-    T     = reset drone
+FLIGHT KEYS (held - manual control, only in MANUAL mode):
+    W/S = pitch fwd/back    A/D = roll left/right
+    Q/E = yaw left/right    R/F = climb/descend
+    SPACE = hover (zero refs + capture altitude)
 
-ENVIRONMENT & VISUALS (one-shot - on keys you won't hit while flying):
-    TAB   = cycle environment (urban <-> open field)
-    C     = cycle camera (free/follow/chase/top/overview)
-    [ / ] = simulation speed 0.25x .. 2x
-    Y     = sensor-noise cycle     B = wind cycle
-    ESC   = quit
+MODE & MISSION:
+    M = toggle MANUAL <-> OUR CONTROL
+    G = waypoint mission     U = circle path
+    J = figure-8             L = straight line
+    H = hold                 N = land
+    X = abort                P = pause
+    T = reset drone
 
-PATH COLORS (in the 3D view):
-    YELLOW dots = reference path (where the drone SHOULD go)
-    BLUE dots   = actual trail (where the drone HAS been)
-    GREEN dots  = waypoints       RED ball = current target
-
-HUD shows: live KEY STATE, desired attitude, motor thrusts M1-M4,
-position/velocity, tracking error, wind/noise, FPS, collisions.
+ENVIRONMENT & VISUALS:
+    TAB = cycle environment  C = cycle camera
+    [ / ] = speed 0.25-2x   Y = noise cycle    B = wind cycle
+    ESC = quit
 """
 from __future__ import annotations
 
@@ -510,6 +505,24 @@ def main() -> None:
                 if tap == "space":
                     s = sim.read_state()
                     sim.refs.update(roll=0.0, pitch=0.0, z=float(s["pos"][2]))
+
+                # PAPER TESTS — work from ANY mode, one keypress, no prereqs
+                elif tap == "1":
+                    if sim.mode != "OUR CONTROL":
+                        sim.switch_mode()
+                    sim.start_paper_test("step")
+                    print(">>> PAPER STEP TEST: 1 rad steps on roll/pitch/yaw\n")
+                elif tap == "2":
+                    if sim.mode != "OUR CONTROL":
+                        sim.switch_mode()
+                    sim.start_paper_test("sine")
+                    print(">>> PAPER SINE TEST: 0.5 rad waves, 1 rad/s, all axes\n")
+                elif tap == "3":
+                    if sim.mode != "OUR CONTROL":
+                        sim.switch_mode()
+                    sim.start_paper_test("flip")
+                    print(">>> PAPER FLIP TEST: 360-degree rotation, no gimbal lock\n")
+
                 # MODE COMMANDS (non-flight keys, no dual-use)
                 elif tap == "m":
                     sim.switch_mode()
@@ -526,12 +539,6 @@ def main() -> None:
                         sim.start_track("figure8")
                     elif tap == "l":
                         sim.start_track("straight")
-                    elif tap == "1":
-                        sim.start_paper_test("step")
-                    elif tap == "2":
-                        sim.start_paper_test("sine")
-                    elif tap == "3":
-                        sim.start_paper_test("flip")
                     elif tap == "h":
                         sim.mission, sim.track_type, sim._paper_qref = "HOLD", None, None
                         sim._hide_markers()
