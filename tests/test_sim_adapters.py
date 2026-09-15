@@ -116,3 +116,44 @@ def test_gazebo_world_is_valid_sdf():
     assert "model://iris_with_ardupilot" in includes, "quadrotor model include missing"
     g = w.find("gravity")
     assert g is not None and float(g.text.split()[2]) < 0  # z-down gravity
+
+
+def test_center_of_mass_locked_at_origin_all_models():
+    """THE PAPER'S #1 ASSUMPTION: CG coincides with the body-frame origin.
+
+    The controller's torque -> angular-acceleration mapping (eq. 18) has no
+    gravity-gradient term — it is only valid when the CoM is exactly at the
+    coordinate origin. If ANY model lets the CoM drift (visual geoms with
+    density, child bodies with mass, a nonzero <inertial pos>), the paper's
+    controller is silently flying a different vehicle than it thinks.
+
+    Verified here for every MuJoCo model (benchmark + both interactive envs)
+    and the PyBullet URDF: body_ipos == [0,0,0], body_iquat == identity,
+    mass == 0.2 kg, inertia == paper values exactly.
+    """
+    import mujoco
+    import numpy as np
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parent.parent
+    models = [
+        repo / "sim" / "mujoco" / "quadrotor.xml",
+        repo / "sim" / "interactive" / "envs" / "urban_v1" / "world.xml",
+        repo / "sim" / "interactive" / "envs" / "open_field_v1" / "world.xml",
+    ]
+    for xml in models:
+        m = mujoco.MjModel.from_xml_path(str(xml))
+        bid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, "quadrotor")
+        assert np.allclose(m.body_ipos[bid], [0, 0, 0], atol=1e-15), \
+            f"CoM drifted in {xml.name}: ipos={m.body_ipos[bid]}"
+        assert np.allclose(m.body_iquat[bid], [1, 0, 0, 0], atol=1e-15), \
+            f"CoM frame rotated in {xml.name}"
+        assert m.body_mass[bid] == 0.2, f"mass wrong in {xml.name}"
+        assert np.allclose(m.body_inertia[bid], [6.5e-4, 6.5e-4, 1.2e-3]), \
+            f"inertia wrong in {xml.name}"
+
+    # PyBullet URDF
+    urdf = (repo / "sim" / "gym_pybullet" / "paper_quad.urdf").read_text()
+    assert 'origin rpy="0 0 0" xyz="0 0 0"' in urdf, "URDF CoM not at origin"
+    assert 'mass value="0.2"' in urdf, "URDF mass wrong"
+    assert 'ixx="6.5e-4"' in urdf and 'izz="1.2e-3"' in urdf, "URDF inertia wrong"
