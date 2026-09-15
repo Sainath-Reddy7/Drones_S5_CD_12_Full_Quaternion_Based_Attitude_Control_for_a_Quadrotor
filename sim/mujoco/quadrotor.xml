@@ -81,7 +81,115 @@
     <geom name="c3" type="ellipsoid" size="7 2.5 1.3" pos="4 -16 66" rgba="0.94 0.95 1 0.42" contype="0" conaffinity="0"/>
     <geom name="c4" type="ellipsoid" size="4 5 1.1" pos="-6 -10 70" rgba="0.95 0.96 1 0.38" contype="0" conaffinity="0"/>
 
-    <body name="quadrotor" pos="0 0 0.5">
+        <!-- ===== roads, cars, trucks (visual-only) ===== -->
+    <geom name="road_main" type="box" size="2.2 30 0.01" pos="12 0 0.008" rgba="0.24 0.24 0.26 1" contype="0" conaffinity="0" />
+    <geom name="road_cross" type="box" size="30 2.2 0.009" pos="0 10 0.007" rgba="0.24 0.24 0.26 1" contype="0" conaffinity="0" />
+    <geom name="road_m_l" type="box" size="0.04 30 0.012" pos="10.0 0 0.012" rgba="0.9 0.9 0.9 1" contype="0" conaffinity="0" />
+    <geom name="road_m_r" type="box" size="0.04 30 0.012" pos="14.0 0 0.012" rgba="0.9 0.9 0.9 1" contype="0" conaffinity="0" />
+    <geom name="road_c_f" type="box" size="30 0.04 0.011" pos="0 8.0 0.011" rgba="0.9 0.9 0.9 1" contype="0" conaffinity="0" />
+    <geom name="road_c_n" type="box" size="30 0.04 0.011" pos="0 12.0 0.011" rgba="0.9 0.9 0.9 1" contype="0" conaffinity="0" />
+    <geom name="dash_m-9" type="box" size="0.05 0.9 0.013" pos="12 -27 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c-9" type="box" size="0.9 0.05 0.012" pos="-27 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m-8" type="box" size="0.05 0.9 0.013" pos="12 -24 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c-8" type="box" size="0.9 0.05 0.012" pos="-24 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m-7" type="box" size="0.05 0.9 0.013" pos="12 -21 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c-7" type="box" size="0.9 0.05 0.012" pos="-21 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m-6" type="box" size="0.05 0.9 0.013" pos="12 -18 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c-6" type="box" size="0.9 0.05 0.012" pos="-18 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m-5" type="box" size="0.05 0.9 0.013" pos="12 -15 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c-5" type="box" size="0.9 0.05 0.012" pos="-15 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m-4" type="box" size="0.05 0.9 0.013" pos="12 -12 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c-4" type="box" size="0.9 0.05 0.012" pos="-12 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m-3" type="box" size="0.05 0.9 0.013" pos="12 -9 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c-3" type="box" size="0.9 0.05 0.012" pos="-9 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m-2" type="box" size="0.05 0.9 0.013" pos="12 -6 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c-2" type="box" size="0.9 0.05 0.012" pos="-6 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m-1" type="box" size="0.05 0.9 0.013" pos="12 -3 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c-1" type="box" size="0.9 0.05 0.012" pos="-3 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m0" type="box" size="0.05 0.9 0.013" pos="12 0 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c0" type="box" size="0.9 0.05 0.012" pos="0 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m1" type="box" size="0.05 0.9 0.013" pos="12 3 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c1" type="box" size="0.9 0.05 0.012" pos="3 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m2" type="box" size="0.05 0.9 0.013" pos="12 6 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c2" type="box" size="0.9 0.05 0.012" pos="6 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m3" type="box" size="0.05 0.9 0.013" pos="12 9 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c3" type="box" size="0.9 0.05 0.012" pos="9 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m4" type="box" size="0.05 0.9 0.013" pos="12 12 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c4" type="box" size="0.9 0.05 0.012" pos="12 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m5" type="box" size="0.05 0.9 0.013" pos="12 15 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c5" type="box" size="0.9 0.05 0.012" pos="15 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m6" type="box" size="0.05 0.9 0.013" pos="12 18 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c6" type="box" size="0.9 0.05 0.012" pos="18 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m7" type="box" size="0.05 0.9 0.013" pos="12 21 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c7" type="box" size="0.9 0.05 0.012" pos="21 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m8" type="box" size="0.05 0.9 0.013" pos="12 24 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c8" type="box" size="0.9 0.05 0.012" pos="24 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_m9" type="box" size="0.05 0.9 0.013" pos="12 27 0.013" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="dash_c9" type="box" size="0.9 0.05 0.012" pos="27 10 0.012" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0" />
+    <geom name="lot" type="box" size="3.5 2.5 0.006" pos="34 14 0.006" rgba="0.3 0.3 0.32 1" contype="0" conaffinity="0" />
+    <geom name="car1_body" type="box" size="0.9 0.42 0.14" pos="12.8 -6 0.16" rgba="0.75 0.15 0.15 1" contype="0" conaffinity="0" euler="0 0 90"/>
+    <geom name="car1_cabin" type="box" size="0.45 0.38 0.13" pos="12.8 -6 0.36" rgba="0.75 0.15 0.15 1" contype="0" conaffinity="0" euler="0 0 90"/>
+    <geom name="car1_glass" type="box" size="0.42 0.34 0.09" pos="12.88 -6 0.37" rgba="0.6 0.75 0.85 0.8" contype="0" conaffinity="0" euler="0 0 90"/>
+    <geom name="car1_w0" type="cylinder" size="0.14 0.06" pos="12.42 -5.45 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car1_w1" type="cylinder" size="0.14 0.06" pos="13.180000000000001 -5.45 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car1_w2" type="cylinder" size="0.14 0.06" pos="12.42 -6.55 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car1_w3" type="cylinder" size="0.14 0.06" pos="13.180000000000001 -6.55 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car2_body" type="box" size="0.9 0.42 0.14" pos="11.2 4 0.16" rgba="0.15 0.3 0.7 1" contype="0" conaffinity="0" euler="0 0 -90"/>
+    <geom name="car2_cabin" type="box" size="0.45 0.38 0.13" pos="11.2 4 0.36" rgba="0.15 0.3 0.7 1" contype="0" conaffinity="0" euler="0 0 -90"/>
+    <geom name="car2_glass" type="box" size="0.42 0.34 0.09" pos="11.28 4 0.37" rgba="0.6 0.75 0.85 0.8" contype="0" conaffinity="0" euler="0 0 -90"/>
+    <geom name="car2_w0" type="cylinder" size="0.14 0.06" pos="11.58 3.45 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car2_w1" type="cylinder" size="0.14 0.06" pos="10.819999999999999 3.45 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car2_w2" type="cylinder" size="0.14 0.06" pos="11.58 4.55 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car2_w3" type="cylinder" size="0.14 0.06" pos="10.819999999999999 4.55 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car3_body" type="box" size="0.9 0.42 0.14" pos="34 14 0.16" rgba="0.2 0.55 0.2 1" contype="0" conaffinity="0" euler="0 0 0"/>
+    <geom name="car3_cabin" type="box" size="0.45 0.38 0.13" pos="34 14 0.36" rgba="0.2 0.55 0.2 1" contype="0" conaffinity="0" euler="0 0 0"/>
+    <geom name="car3_glass" type="box" size="0.42 0.34 0.09" pos="34.08 14 0.37" rgba="0.6 0.75 0.85 0.8" contype="0" conaffinity="0" euler="0 0 0"/>
+    <geom name="car3_w0" type="cylinder" size="0.14 0.06" pos="34.55 14.38 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car3_w1" type="cylinder" size="0.14 0.06" pos="34.55 13.62 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car3_w2" type="cylinder" size="0.14 0.06" pos="33.45 14.38 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car3_w3" type="cylinder" size="0.14 0.06" pos="33.45 13.62 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car4_body" type="box" size="0.9 0.42 0.14" pos="-6 10.8 0.16" rgba="0.8 0.8 0.85 1" contype="0" conaffinity="0" euler="0 0 180"/>
+    <geom name="car4_cabin" type="box" size="0.45 0.38 0.13" pos="-6 10.8 0.36" rgba="0.8 0.8 0.85 1" contype="0" conaffinity="0" euler="0 0 180"/>
+    <geom name="car4_glass" type="box" size="0.42 0.34 0.09" pos="-5.92 10.8 0.37" rgba="0.6 0.75 0.85 0.8" contype="0" conaffinity="0" euler="0 0 180"/>
+    <geom name="car4_w0" type="cylinder" size="0.14 0.06" pos="-6.55 10.42 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car4_w1" type="cylinder" size="0.14 0.06" pos="-6.55 11.180000000000001 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car4_w2" type="cylinder" size="0.14 0.06" pos="-5.45 10.42 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car4_w3" type="cylinder" size="0.14 0.06" pos="-5.45 11.180000000000001 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car5_body" type="box" size="0.9 0.42 0.14" pos="6 9.2 0.16" rgba="0.9 0.6 0.05 1" contype="0" conaffinity="0" euler="0 0 0"/>
+    <geom name="car5_cabin" type="box" size="0.45 0.38 0.13" pos="6 9.2 0.36" rgba="0.9 0.6 0.05 1" contype="0" conaffinity="0" euler="0 0 0"/>
+    <geom name="car5_glass" type="box" size="0.42 0.34 0.09" pos="6.08 9.2 0.37" rgba="0.6 0.75 0.85 0.8" contype="0" conaffinity="0" euler="0 0 0"/>
+    <geom name="car5_w0" type="cylinder" size="0.14 0.06" pos="6.55 9.58 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car5_w1" type="cylinder" size="0.14 0.06" pos="6.55 8.819999999999999 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car5_w2" type="cylinder" size="0.14 0.06" pos="5.45 9.58 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="car5_w3" type="cylinder" size="0.14 0.06" pos="5.45 8.819999999999999 0.14" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck1_cab" type="box" size="0.8 0.55 0.55" pos="12.800 17.200 0.00" rgba="0.85 0.3 0.1 1" contype="0" conaffinity="0" euler="0 0 90"/>
+    <geom name="truck1_glass" type="box" size="0.1 0.45 0.3" pos="12.800 18.000 0.00" rgba="0.6 0.75 0.85 0.8" contype="0" conaffinity="0" euler="0 0 90"/>
+    <geom name="truck1_chassis" type="box" size="1.0 0.45 0.15" pos="12.800 16.000 0.00" rgba="0.15 0.15 0.17 1" contype="0" conaffinity="0" euler="0 0 90"/>
+    <geom name="truck1_trailer" type="box" size="2.9 0.62 0.75" pos="12.800 13.100 0.00" rgba="0.9 0.9 0.92 1" contype="0" conaffinity="0" euler="0 0 90"/>
+    <geom name="truck1_trailer_r" type="box" size="0.1 0.64 0.77" pos="12.800 10.150 0.00" rgba="0.75 0.2 0.15 1" contype="0" conaffinity="0" euler="0 0 90"/>
+    <geom name="truck1_w00" type="cylinder" size="0.22 0.08" pos="12.250 17.300 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck1_w01" type="cylinder" size="0.22 0.08" pos="13.350 17.300 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck1_w10" type="cylinder" size="0.22 0.08" pos="12.250 16.500 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck1_w11" type="cylinder" size="0.22 0.08" pos="13.350 16.500 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck1_w20" type="cylinder" size="0.22 0.08" pos="12.250 11.400 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck1_w21" type="cylinder" size="0.22 0.08" pos="13.350 11.400 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck1_w30" type="cylinder" size="0.22 0.08" pos="12.250 10.600 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck1_w31" type="cylinder" size="0.22 0.08" pos="13.350 10.600 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck2_cab" type="box" size="0.8 0.55 0.55" pos="-8.800 10.800 0.00" rgba="0.85 0.3 0.1 1" contype="0" conaffinity="0" euler="0 0 0"/>
+    <geom name="truck2_glass" type="box" size="0.1 0.45 0.3" pos="-8.000 10.800 0.00" rgba="0.6 0.75 0.85 0.8" contype="0" conaffinity="0" euler="0 0 0"/>
+    <geom name="truck2_chassis" type="box" size="1.0 0.45 0.15" pos="-10.000 10.800 0.00" rgba="0.15 0.15 0.17 1" contype="0" conaffinity="0" euler="0 0 0"/>
+    <geom name="truck2_trailer" type="box" size="2.9 0.62 0.75" pos="-12.900 10.800 0.00" rgba="0.9 0.9 0.92 1" contype="0" conaffinity="0" euler="0 0 0"/>
+    <geom name="truck2_trailer_r" type="box" size="0.1 0.64 0.77" pos="-15.850 10.800 0.00" rgba="0.75 0.2 0.15 1" contype="0" conaffinity="0" euler="0 0 0"/>
+    <geom name="truck2_w00" type="cylinder" size="0.22 0.08" pos="-8.700 11.350 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck2_w01" type="cylinder" size="0.22 0.08" pos="-8.700 10.250 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck2_w10" type="cylinder" size="0.22 0.08" pos="-9.500 11.350 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck2_w11" type="cylinder" size="0.22 0.08" pos="-9.500 10.250 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck2_w20" type="cylinder" size="0.22 0.08" pos="-14.600 11.350 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck2_w21" type="cylinder" size="0.22 0.08" pos="-14.600 10.250 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck2_w30" type="cylinder" size="0.22 0.08" pos="-15.400 11.350 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+    <geom name="truck2_w31" type="cylinder" size="0.22 0.08" pos="-15.400 10.250 0.00" rgba="0.08 0.08 0.08 1" contype="0" conaffinity="0" euler="90 0 0"/>
+
+<body name="quadrotor" pos="0 0 0.5">
       <freejoint name="root"/>
       <inertial pos="0 0 0" mass="0.2" diaginertia="6.5e-4 6.5e-4 1.2e-3"/>
       <!-- collision frame (physics): thin plate covering the 0.15 m arms.
