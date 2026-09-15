@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Paper vehicle in MJCF: mass 0.2 kg and diaginertia are the pysitl-derived
+     airframe (FRP.md section 2): paper inertia Ixx=Iyy=6.5e-4, Izz=1.2e-3 kg*m^2,
+     arm length L=0.15 m (rotor tips at (+-d,+-d, 0), d = L/sqrt(2)).
+     World/body are z-up, so sim/common/bridge.py's z-up mixer applies thrust
+     along body +z and torque about the body axes directly.
+
+     VISUAL-ONLY UPGRADE (benchmark-invariant): all detail geoms below are
+     contype=0 conaffinity=0 -- zero contact, zero mass contribution (the
+     body's explicit <inertial> governs dynamics, so physics is bit-identical;
+     verified by rerunning seed 0 after every visual change).
+
+     Timestep 5e-5 s (20 kHz) clears the paper-derived minimum control rate
+     (~12.3 kHz) with margin -- quat_sitl.dynamics.stable_control_rate_hz. -->
+<mujoco model="paper_quadrotor">
+  <option timestep="5e-5" gravity="0 0 -9.81" integrator="implicitfast"/>
+
+  <visual>
+    <headlight ambient="0.35 0.35 0.35" diffuse="0.55 0.55 0.55" specular="0.15 0.15 0.15"/>
+    <global offwidth="1920" offheight="1080"/>
+    <map znear="0.01" zfar="60"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.45 0.55 0.75" rgb2="0.9 0.9 0.95" width="256" height="256"/>
+    <texture name="floorcheck" type="2d" builtin="checker" rgb1="0.32 0.36 0.32" rgb2="0.52 0.56 0.52" width="300" height="300"/>
+    <material name="floormat" texture="floorcheck" texrepeat="8 8" specular="0.1" shininess="0.2"/>
+  </asset>
+
+  <worldbody>
+    <light directional="true" castshadow="true" pos="2 2 5" dir="0 0 -1"/>
+    <geom name="floor" type="plane" size="30 30 0.1" material="floormat"
+          rgba="0.8 0.8 0.8 1" friction="1.0 0.5 0.5"/>
+
+    <body name="quadrotor" pos="0 0 0.5">
+      <freejoint name="root"/>
+      <inertial pos="0 0 0" mass="0.2" diaginertia="6.5e-4 6.5e-4 1.2e-3"/>
+      <!-- collision frame (physics): thin plate covering the 0.15 m arms.
+           group 3 = hidden by default; contacts still active -->
+      <geom name="frame" type="box" size="0.17 0.17 0.015" group="3"
+            friction="0.8 0.5 0.5"/>
+
+      <!-- ============ visual detail (contype=0 conaffinity=0: no physics) === -->
+      <geom name="shell" type="ellipsoid" size="0.085 0.085 0.028" pos="0 0 0.018"
+            rgba="0.22 0.24 0.28 1" contype="0" conaffinity="0"/>
+      <geom name="plate" type="cylinder" size="0.09 0.008" pos="0 0 -0.004"
+            rgba="0.15 0.16 0.18 1" contype="0" conaffinity="0"/>
+      <!-- four arms at 45 deg toward the rotor tips -->
+      <geom name="arm1" type="box" size="0.075 0.007 0.005" euler="0 0 45"
+            pos="0.053033 0.053033 0" rgba="0.28 0.3 0.34 1" contype="0" conaffinity="0"/>
+      <geom name="arm2" type="box" size="0.075 0.007 0.005" euler="0 0 -45"
+            pos="-0.053033 -0.053033 0" rgba="0.28 0.3 0.34 1" contype="0" conaffinity="0"/>
+      <geom name="arm3" type="box" size="0.075 0.007 0.005" euler="0 0 -45"
+            pos="0.053033 -0.053033 0" rgba="0.28 0.3 0.34 1" contype="0" conaffinity="0"/>
+      <geom name="arm4" type="box" size="0.075 0.007 0.005" euler="0 0 45"
+            pos="-0.053033 0.053033 0" rgba="0.28 0.3 0.34 1" contype="0" conaffinity="0"/>
+      <!-- nose camera pod (+x is front, between rotors 1 and 3) -->
+      <geom name="cam" type="box" size="0.014 0.01 0.008" pos="0.098 0 0.02"
+            rgba="0.1 0.1 0.1 1" contype="0" conaffinity="0"/>
+      <geom name="lens" type="cylinder" size="0.004 0.006" euler="0 90 0" pos="0.113 0 0.02"
+            rgba="0.05 0.08 0.12 1" contype="0" conaffinity="0"/>
+      <!-- tail LED -->
+      <geom name="led" type="sphere" size="0.006" pos="-0.095 0 0.02"
+            rgba="1 0.1 0.1 1" contype="0" conaffinity="0"/>
+
+      <!-- motor mounts + prop-blur discs, one per rotor.
+           Order matches sim/common/bridge.py mix_zup:
+             1 FR(+d,+d) red   2 RL(-d,-d) blue   3 FL(+d,-d) green   4 RR(-d,+d) yellow -->
+      <geom name="mount1" type="cylinder" size="0.011 0.012" pos="0.106066 0.106066 0.014"
+            rgba="0.18 0.18 0.2 1" contype="0" conaffinity="0"/>
+      <geom name="mount2" type="cylinder" size="0.011 0.012" pos="-0.106066 -0.106066 0.014"
+            rgba="0.18 0.18 0.2 1" contype="0" conaffinity="0"/>
+      <geom name="mount3" type="cylinder" size="0.011 0.012" pos="0.106066 -0.106066 0.014"
+            rgba="0.18 0.18 0.2 1" contype="0" conaffinity="0"/>
+      <geom name="mount4" type="cylinder" size="0.011 0.012" pos="-0.106066 0.106066 0.014"
+            rgba="0.18 0.18 0.2 1" contype="0" conaffinity="0"/>
+      <geom name="prop1" type="cylinder" size="0.045 0.0012" pos="0.106066 0.106066 0.03"
+            rgba="0.9 0.2 0.2 0.32" contype="0" conaffinity="0"/>
+      <geom name="prop2" type="cylinder" size="0.045 0.0012" pos="-0.106066 -0.106066 0.03"
+            rgba="0.2 0.25 0.9 0.32" contype="0" conaffinity="0"/>
+      <geom name="prop3" type="cylinder" size="0.045 0.0012" pos="0.106066 -0.106066 0.03"
+            rgba="0.2 0.8 0.25 0.32" contype="0" conaffinity="0"/>
+      <geom name="prop4" type="cylinder" size="0.045 0.0012" pos="-0.106066 0.106066 0.03"
+            rgba="0.95 0.85 0.2 0.32" contype="0" conaffinity="0"/>
+
+      <!-- rotor reference points (massless sites, unchanged from benchmark) -->
+      <site name="m1" type="sphere" size="0.004" pos="0.106066 0.106066 0.025" rgba="0.85 0.2 0.2 1"/>
+      <site name="m2" type="sphere" size="0.004" pos="-0.106066 -0.106066 0.025" rgba="0.2 0.2 0.85 1"/>
+      <site name="m3" type="sphere" size="0.004" pos="0.106066 -0.106066 0.025" rgba="0.2 0.85 0.2 1"/>
+      <site name="m4" type="sphere" size="0.004" pos="-0.106066 0.106066 0.025" rgba="0.85 0.85 0.2 1"/>
+    </body>
+  </worldbody>
+</mujoco>
