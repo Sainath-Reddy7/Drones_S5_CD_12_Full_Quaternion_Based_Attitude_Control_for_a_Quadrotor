@@ -1,20 +1,32 @@
-"""INTERACTIVE MUJOCO DRONE SIMULATOR -- pro edition, fixed input pipeline.
+"""INTERACTIVE MUJOCO DRONE SIMULATOR -- clean keys, colored paths.
 
-CONTROL PIPELINE (every stage real, every stage tested):
-  KEYBOARD -> InputManager (event hook) -> pilot refs -> paper P^2 law ->
-  priority mixer -> 4 rotor thrusts -> MuJoCo wrench -> dynamics -> state
+FLIGHT KEYS (held - continuous control, NEVER used for anything else):
+    W/S = forward/back    A/D = left/right    Q/E = yaw left/right
+    R/F = climb/descend   SPACE = hover (capture position)
 
-MODES:  M manual (you fly)  |  O our-control (autopilot / paper tests)
-OUR CONTROL:  G mission  U circle  8 figure8  V straight
-              6 PAPER-STEP  7 PAPER-SINE  9 PAPER-FLIP (base paper, live)
-              H hold  L land  K abort
-ENVIRONMENT:  E cycles environment (urban_v1 / open_field_v1, isolated dirs)
-              N wind cycle   Y noise cycle (PAPER = the paper's +/-0.1 model)
-SIM:  P pause  T reset drone  [ ] speed 0.25..2x  Esc quit
-CAM:  1 free  2 follow  3 chase  4 top  5 overview  C cycle
+MODE COMMANDS (one-shot taps - no overlap with flight keys):
+    M     = toggle MANUAL <-> OUR CONTROL
+    G     = waypoint mission        U = circle path
+    J     = figure-8 path           L = straight line
+    1/2/3 = paper STEP/SINE/FLIP (base paper, live)
+    H     = hold position           N = land
+    X     = abort mission           P = pause/resume
+    T     = reset drone
 
-HUD shows: live KEY STATE [W][A][S][D]..., desired attitude, motor thrusts
-M1-M4, position/velocity, tracking error, wind/noise, FPS, collisions.
+ENVIRONMENT & VISUALS (one-shot - on keys you won't hit while flying):
+    TAB   = cycle environment (urban <-> open field)
+    C     = cycle camera (free/follow/chase/top/overview)
+    [ / ] = simulation speed 0.25x .. 2x
+    Y     = sensor-noise cycle     B = wind cycle
+    ESC   = quit
+
+PATH COLORS (in the 3D view):
+    YELLOW dots = reference path (where the drone SHOULD go)
+    BLUE dots   = actual trail (where the drone HAS been)
+    GREEN dots  = waypoints       RED ball = current target
+
+HUD shows: live KEY STATE, desired attitude, motor thrusts M1-M4,
+position/velocity, tracking error, wind/noise, FPS, collisions.
 """
 from __future__ import annotations
 
@@ -100,7 +112,9 @@ class DroneSim:
     def _markers(self) -> dict:
         g = lambda n: self.mj.mj_name2id(self.model, self.mj.mjtObj.mjOBJ_GEOM, n)
         return {"dots": [g(f"mk_d{i}") for i in range(96)],
-                "wps": [g(f"mk_w{i}") for i in range(24)], "target": g("mk_target")}
+                "wps": [g(f"mk_w{i}") for i in range(24)],
+                "target": g("mk_target"),
+                "trail": [g(f"mk_t{i}") for i in range(48)]}
 
     def _collect_traffic(self) -> list:
         out = []
@@ -111,8 +125,10 @@ class DroneSim:
         return out
 
     def _hide_markers(self) -> None:
-        for g in self._mk["dots"] + self._mk["wps"] + [self._mk["target"]]:
+        for g in (self._mk["dots"] + self._mk["wps"] + [self._mk["target"]]
+                  + self._mk["trail"]):
             self.model.geom_pos[g] = [0, 0, -10]
+        self._trail_i = 0
 
     def show_path(self, pts, wps=None) -> None:
         self._hide_markers()
@@ -124,6 +140,13 @@ class DroneSim:
 
     def _target_marker(self, p) -> None:
         self.model.geom_pos[self._mk["target"]] = p
+
+    def _drop_trail_marker(self, pos) -> None:
+        """Drop a blue trail dot at the drone's actual position (ring buffer)."""
+        if not hasattr(self, "_trail_i"):
+            self._trail_i = 0
+        self.model.geom_pos[self._mk["trail"][self._trail_i]] = pos
+        self._trail_i = (self._trail_i + 1) % len(self._mk["trail"])
 
     def set_drone(self, pos, quat4=(1, 0, 0, 0)) -> None:
         self.data.qpos[self._qadr:self._qadr + 7] = [*pos, *quat4]
@@ -158,10 +181,6 @@ class DroneSim:
         gz = cfg.GUIDANCE
         tgt_p = 0.4 * ("w" in keys) - 0.4 * ("s" in keys)
         tgt_r = 0.4 * ("d" in keys) - 0.4 * ("a" in keys)
-        if "i" in keys: tgt_p += 0.25
-        if "k" in keys: tgt_p -= 0.25
-        if "j" in keys: tgt_r -= 0.25
-        if "l" in keys: tgt_r += 0.25
         self.refs["pitch"] += 0.35 * (tgt_p - self.refs["pitch"])
         self.refs["roll"] += 0.35 * (tgt_r - self.refs["roll"])
         self.refs["pitch"] = float(np.clip(self.refs["pitch"], -gz["max_tilt_rad"], gz["max_tilt_rad"]))
@@ -476,15 +495,38 @@ def main() -> None:
                 if tap == "space":
                     s = sim.read_state()
                     sim.refs.update(roll=0.0, pitch=0.0, z=float(s["pos"][2]))
-                elif tap == "m" and sim.mode != "MANUAL":
-                    sim.switch_mode()
-                elif tap == "o" and sim.mode != "OUR CONTROL":
+                # MODE COMMANDS (non-flight keys, no dual-use)
+                elif tap == "m":
                     sim.switch_mode()
                 elif tap == "p":
                     sim.paused = not sim.paused
                 elif tap == "t":
                     sim.reset()
-                elif tap == "e":
+                elif sim.mode == "OUR CONTROL":
+                    if tap == "g":
+                        sim.start_track("mission")
+                    elif tap == "u":
+                        sim.start_track("circle")
+                    elif tap == "j":
+                        sim.start_track("figure8")
+                    elif tap == "l":
+                        sim.start_track("straight")
+                    elif tap == "1":
+                        sim.start_paper_test("step")
+                    elif tap == "2":
+                        sim.start_paper_test("sine")
+                    elif tap == "3":
+                        sim.start_paper_test("flip")
+                    elif tap == "h":
+                        sim.mission, sim.track_type, sim._paper_qref = "HOLD", None, None
+                        sim._hide_markers()
+                    elif tap == "n":
+                        sim.land()
+                    elif tap == "x":
+                        sim.mission, sim.track_type = "HOLD", None
+                        sim._hide_markers()
+                # ENVIRONMENT & VISUALS (keys you never touch while flying)
+                elif tap == "tab":
                     env_i = (env_i + 1) % len(ENV_LIST)
                     viewer.close()
                     sim = DroneSim(env=ENV_LIST[env_i])
@@ -493,44 +535,19 @@ def main() -> None:
                     k = 0
                     t_wall = time.time()
                     print(f"\n== ENV -> {sim.env} ==\n")
-                elif sim.mode == "OUR CONTROL":
-                    if tap == "g":
-                        sim.start_track("mission")
-                    elif tap == "u":
-                        sim.start_track("circle")
-                    elif tap == "8":
-                        sim.start_track("figure8")
-                    elif tap == "v":
-                        sim.start_track("straight")
-                    elif tap == "6":
-                        sim.start_paper_test("step")
-                    elif tap == "7":
-                        sim.start_paper_test("sine")
-                    elif tap == "9":
-                        sim.start_paper_test("flip")
-                    elif tap == "h":
-                        sim.mission, sim.track_type, sim._paper_qref = "HOLD", None, None
-                        sim._hide_markers()
-                    elif tap == "l":
-                        sim.land()
-                    elif tap == "k":
-                        sim.mission, sim.track_type = "HOLD", None
-                        sim._hide_markers()
-                elif tap == "n":
-                    sim.wind = {"OFF": "LOW", "LOW": "MEDIUM", "MEDIUM": "HIGH", "HIGH": "OFF"}[sim.wind]
+                elif tap == "c":
+                    cam = {"FREE": "FOLLOW", "FOLLOW": "CHASE", "CHASE": "TOP",
+                           "TOP": "OVERVIEW", "OVERVIEW": "FREE"}[cam]
                 elif tap == "y":
-                    sim.noise = {"PERFECT": "LOW", "LOW": "PAPER", "PAPER": "HIGH", "HIGH": "PERFECT"}[sim.noise]
+                    sim.noise = {"PERFECT": "LOW", "LOW": "PAPER",
+                                 "PAPER": "HIGH", "HIGH": "PERFECT"}[sim.noise]
+                elif tap == "b":
+                    sim.wind = {"OFF": "LOW", "LOW": "MEDIUM",
+                                "MEDIUM": "HIGH", "HIGH": "OFF"}[sim.wind]
                 elif tap == "[":
                     sim.speed = max(0.25, sim.speed / 2)
                 elif tap == "]":
                     sim.speed = min(2.0, sim.speed * 2)
-                elif tap == "c":
-                    cam = {"FREE": "FOLLOW", "FOLLOW": "CHASE", "CHASE": "TOP",
-                           "TOP": "OVERVIEW", "OVERVIEW": "FREE"}[cam]
-                for num, cm in (("1", "FREE"), ("2", "FOLLOW"), ("3", "CHASE"),
-                                ("4", "TOP"), ("5", "OVERVIEW")):
-                    if tap == num:
-                        cam = cm
 
             if not sim.paused:
                 if k % POLL_EVERY == 0:
