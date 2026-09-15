@@ -91,6 +91,8 @@ class DroneSim:
         self.wind = "OFF"
         self.noise = "PAPER"
         self.speed = 1.0
+        self.lock_position = True         # attitude-only (the paper's plant)
+        self._lock_point = SPAWN.copy()  # where the drone is pinned
         self.refs = {"roll": 0.0, "pitch": 0.0, "yaw": 0.0, "z": SPAWN[2]}
         self.keys: set = set()
         self.collisions: list[dict] = []
@@ -161,6 +163,8 @@ class DroneSim:
         self.mode, self.mission = "MANUAL", "IDLE"
         self.track_type = self.paper_test = None
         self._thrust_override = self._paper_qref = None
+        self.lock_position = True
+        self._lock_point = SPAWN.copy()
         self.track_log.clear()
         self._hide_markers()
 
@@ -251,6 +255,7 @@ class DroneSim:
     def start_track(self, kind: str) -> None:
         self.track_type, self.track_t, self.wp, self._seg = kind, 0.0, 0, 0.0
         self.mission, self.paper_test, self._paper_qref = "TAKEOFF", None, None
+        self.lock_position = False    # path tracking needs full 6-DOF
         self.refs["z"] = max(self.refs["z"], 2.5)
         pts, wps = self._path_points(kind)
         self.show_path(pts, wps)
@@ -367,6 +372,14 @@ class DroneSim:
         self.data.xfrc_applied[self.bid, 3:6] = h["R"] @ h["tau"]
         self.mj.mj_step(self.model, self.data)
 
+        # LOCK POSITION for manual + paper tests: the paper's plant is
+        # attitude-ONLY (no translational states, eqs 17-18). Pin the drone
+        # to its hover point so the demo shows pure attitude control —
+        # exactly what the paper contributes. Unlocked only for path tracking.
+        if self.lock_position:
+            self.data.qpos[self._qadr:self._qadr + 3] = self._lock_point
+            self.data.qvel[self._vadr:self._vadr + 3] = 0
+
     @property
     def _t_now(self) -> float:
         return self.data.time
@@ -462,6 +475,8 @@ class DroneSim:
         else:
             self.mode, self.mission = "MANUAL", "IDLE"
             self._hide_markers()
+            self.lock_position = True     # back to attitude-only
+            self._lock_point = s["pos"].copy()
 
     def land(self) -> None:
         self.refs["z"] = self.read_state()["pos"][2]
@@ -607,7 +622,7 @@ def main() -> None:
                       f"xyz=({s['pos'][0]:5.1f},{s['pos'][1]:5.1f},{s['pos'][2]:4.1f}) "
                       f"v={np.linalg.norm(s['vel']):4.1f} attE={tel.get('err_deg', 0):5.1f} "
                       f"xtr={sim.xtrack:4.2f} W:{sim.wind[:3]} N:{sim.noise[:4]} "
-                      f"x{sim.speed:g} {fps}f{rt}{' PAUSE' if sim.paused else ''}"
+                      f"x{sim.speed:g} {'LOCKED' if sim.lock_position else 'FREE'} {fps}f{rt}{' PAUSE' if sim.paused else ''}"
                       + (f" !! {w}" if w else ""))
 
             if k % 1000 == 0 and k > 0 and not sim.paused:
