@@ -189,6 +189,16 @@ def run(
 
         obs, _, _, _, _ = env.step(np.array(rpms)[None, :])
 
+        if gui and k % 24 == 0:
+            # chase camera: the attitude-only scenarios drift (by design), and
+            # PyBullet's static camera loses the drone within seconds
+            import pybullet as p
+
+            p.resetDebugVisualizerCamera(
+                cameraDistance=1.2, cameraYaw=25, cameraPitch=-20,
+                cameraTargetPosition=pos,
+            )
+
         if k % log_every == 0:
             log.add(
                 t, q_ref, q_m, omega_meas, tau, sat.astype(float),
