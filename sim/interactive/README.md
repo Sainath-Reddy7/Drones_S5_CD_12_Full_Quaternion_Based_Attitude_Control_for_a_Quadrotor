@@ -19,12 +19,21 @@ or double-click the desktop icon **DRONE SIM - INTERACTIVE (click me).bat**.)
 
 | Keys | Action | | Keys | Action |
 |---|---|---|---|---|
-| `W/S` | pitch fwd/back | | `M` | switch MANUAL ⇄ OUR CONTROL |
-| `A/D` | roll left/right | | `G` | start mission (our control) |
-| `Q/E` | yaw left/right | | `H` | hold (our control) |
-| `↑/↓` or `R/F` | climb / descend | | `L` | land (our control) |
-| `Space` | hover (zero refs) | | `1/2/3` or `C` | free / follow / top camera |
+| `W/S` | pitch fwd/back | | `M`/`O` | switch MANUAL ⇄ OUR CONTROL |
+| `A/D` | roll left/right | | `G` | waypoint mission |
+| `Q/E` | yaw left/right | | `U`/`I`/`V` | circle / figure-8 / straight path |
+| `↑/↓` or `R/F` | climb / descend | | `X`/`Z`/`B` | **paper STEP / SINE / FLIP tests** |
+| `Space` | hover (zero refs) | | `H`/`L`/`K` | hold / land / abort mission |
+| `1..5` or `C` | free/follow/chase/top/overview cam | | `N`/`Y` | wind / sensor-noise cycle |
+| `P` | pause | | `T` | reset drone to pad |
 | `Esc` | quit | | | |
+
+**The base paper's three tests run LIVE**: `X`, `Z`, `B` feed the paper's own
+reference generators (the same `quat_sitl.references` the benchmark uses)
+straight into the frozen P² law in the simulator — attitude tracking with
+the paper's ±0.1 sensor noise (noise level `PAPER`), and the flip with the
+benchmark's acro thrust handling. This is the paper's control value,
+demonstrated interactively.
 
 Keys work while the 3D window has focus (global listener).
 
