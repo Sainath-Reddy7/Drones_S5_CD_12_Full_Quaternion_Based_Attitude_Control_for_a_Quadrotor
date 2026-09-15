@@ -211,3 +211,57 @@ def test_pipeline_yaw_and_altitude():
     s = sim.read_state()
     assert s["pos"][2] - z0 > 1.5, "R did not climb"
     assert abs(s["rpy_sim"][2]) > 0.5, "Q did not yaw"
+
+
+def test_position_locked_attitude_only():
+    """THE PAPER'S PLANT: attitude-only, zero translation.
+
+    In manual + paper-test mode the drone is pinned to its hover point —
+    it can rotate freely (that's the paper's contribution) but must not
+    translate even a millimeter. This test drives aggressive attitude
+    commands and verifies position stays EXACTLY at the spawn point.
+    """
+    sim = DroneSim()
+    assert sim.lock_position is True, "lock should be the default"
+    spawn = sim.read_state()["pos"].copy()
+
+    # aggressive attitude: full forward + yaw for 3 seconds
+    for k in range(int(3.0 * sim.rate)):
+        keys = {"w", "q"} if k % 100 == 0 else None
+        if keys:
+            sim.pilot_input(keys)
+        if k % 10 == 0:
+            sim.control_tick()
+        sim.step()
+
+    s = sim.read_state()
+    assert np.allclose(s["pos"], spawn, atol=1e-10), \
+        f"position drifted: {np.linalg.norm(s['pos'] - spawn):.2e} m"
+    assert abs(s["rpy_sim"][2]) > 0.3, "drone should have yawed (rotation works)"
+
+    # also verify paper-test mode stays locked
+    sim.reset()
+    sim.switch_mode()
+    sim.start_paper_test("step")
+    for k in range(int(2.0 * sim.rate)):
+        if k % 100 == 0:
+            sim.guidance()
+        if k % 10 == 0:
+            sim.control_tick()
+        sim.step()
+    s2 = sim.read_state()
+    assert np.allclose(s2["pos"], SPAWN, atol=1e-10), "paper test drifted"
+
+    # and path tracking UNLOCKS (needs translation)
+    sim.reset()
+    sim.switch_mode()
+    sim.start_track("circle")
+    assert sim.lock_position is False, "path tracking should unlock position"
+    for k in range(int(3.0 * sim.rate)):
+        if k % 100 == 0:
+            sim.guidance()
+        if k % 10 == 0:
+            sim.control_tick()
+        sim.step()
+    s3 = sim.read_state()
+    assert s3["pos"][2] > SPAWN[2] + 0.5, "path tracking should climb (free movement)"
