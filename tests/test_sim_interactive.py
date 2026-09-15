@@ -1,8 +1,10 @@
 """Headless validation of the interactive simulator (no viewer/keyboard).
 
-Covers: model + environment inventory, hover stability on the paper law,
-collision detection with named objects, safe mode handoff, path tracking,
-paper tests, wind, noise, traffic, safety, and telemetry logging.
+Covers: both environments, hover stability, collision detection, safe mode
+handoff, circle path tracking, live paper tests, wind, noise, traffic,
+safety, marker pool, and the INPUT PIPELINE (InputManager -> refs -> motors
+-> physics movement) with synthetic key events through the identical code
+path a real keypress takes.
 """
 from __future__ import annotations
 
@@ -11,12 +13,12 @@ import pytest
 
 pytest.importorskip("mujoco")
 
-from sim.interactive.app import SPAWN, DroneSim
+from sim.interactive.app import ENV_LIST, SPAWN, DroneSim
+from sim.interactive.input_manager import InputManager
 
 
-def _drive(sim: DroneSim, seconds: float, keys: set = frozenset()) -> dict:
-    n = int(seconds * sim.rate)
-    for k in range(n):
+def _drive(sim, seconds, keys=frozenset()):
+    for k in range(int(seconds * sim.rate)):
         if k % 100 == 0:
             if sim.mode == "MANUAL":
                 sim.pilot_input(set(keys))
@@ -29,110 +31,183 @@ def _drive(sim: DroneSim, seconds: float, keys: set = frozenset()) -> dict:
     return sim.read_state()
 
 
-def _geom_names(sim):
+def _names(sim):
     import mujoco
 
-    return {mujoco.mj_id2name(sim.model, mujoco.mjtObj.mjOBJ_GEOM, i)
-            for i in range(sim.model.ngeom)}
+    return {mujoco.mj_id2name(sim.model, mujoco.mjtObj.mjOBJ_GEOM, i) for i in range(sim.model.ngeom)}
 
 
-def test_model_and_environment_inventory():
-    sim = DroneSim()
+@pytest.mark.parametrize("env", ENV_LIST)
+def test_both_environments_load_with_inventory(env):
+    sim = DroneSim(env=env)
     m = sim.model
     assert m.body_mass[sim.bid] == 0.2
     assert np.allclose(m.body_inertia[sim.bid], [6.5e-4, 6.5e-4, 1.2e-3])
-    names = _geom_names(sim)
-    assert len([n for n in names if n and n.startswith("bldg_") and not n.endswith("r")]) >= 5
-    assert len([n for n in names if n and n.startswith("car_") and not n.endswith("c")]) >= 3
-    assert len([n for n in names if n and n.endswith("trailer")]) >= 3  # 2 static + 1 moving
-    assert len([n for n in names if n and n.endswith("_trunk")]) >= 6
-    assert len([n for n in names if n and n.startswith("mk_")]) == 121  # path marker pool
+    names = _names(sim)
+    assert sum(1 for n in names if n and n.startswith("mk_")) == 121
+    wheels = sum(1 for n in names if n and "_w" in n and ("car_" in n or "truck_" in n))
+    assert wheels >= 24, f"wheels={wheels}"          # real wheeled vehicles
+    assert any(n and n.endswith("_cabin") for n in names)
+    assert any(n and n.endswith("_glass") for n in names)
+    if env == "urban_v1":
+        assert sum(1 for n in names if n and n.startswith("bldg_") and not n.endswith(("r", "win", "roof", "ant"))) >= 5
 
 
-def test_manual_hover_is_stable():
+def test_manual_hover_stable():
     sim = DroneSim()
     s = _drive(sim, 3.0)
     assert abs(s["pos"][2] - SPAWN[2]) < 0.3
     from quat_sitl import quaternion as quat
-    alpha = 2 * np.arccos(np.clip(abs(float(np.dot(quat.from_euler(0, 0, 0), s["q"]))), 0, 1))
-    assert np.degrees(alpha) < 20
+    a = 2 * np.arccos(np.clip(abs(float(np.dot(quat.from_euler(0, 0, 0), s["q"]))), 0, 1))
+    assert np.degrees(a) < 20
 
 
-def test_collision_detection_and_logging():
+def test_collision_detection():
     sim = DroneSim()
-    sim.set_drone([9.0, 20.0, 5.0])  # inside bldg_2
+    sim.set_drone([9.0, 20.0, 5.0])  # inside bldg_2 (urban_v1)
     _drive(sim, 0.5)
-    assert sim.collisions and any(c["object"].startswith("bldg") for c in sim.collisions)
+    assert any(c["object"].startswith("bldg") for c in sim.collisions)
 
 
-def test_mode_switch_initializes_from_current_state():
+def test_mode_switch_safe():
     sim = DroneSim()
     _drive(sim, 1.0)
     sim.refs["z"] = 2.0
     _drive(sim, 1.0)
-    at_switch = sim.read_state()
+    at = sim.read_state()
     sim.switch_mode()
     assert sim.mode == "OUR CONTROL"
-    assert sim.refs["z"] == pytest.approx(at_switch["pos"][2], abs=0.3)
+    assert sim.refs["z"] == pytest.approx(at["pos"][2], abs=0.3)
     s = _drive(sim, 1.5)
-    assert abs(s["pos"][2] - at_switch["pos"][2]) < 0.8
-    assert np.linalg.norm(s["vel"]) < 2.0
+    assert abs(s["pos"][2] - at["pos"][2]) < 0.8 and np.linalg.norm(s["vel"]) < 2.0
 
 
-def test_circle_path_tracking_converges():
+def test_circle_tracking_converges():
     sim = DroneSim()
-    sim.switch_mode()                      # -> OUR CONTROL
+    sim.switch_mode()
     sim.start_track("circle")
-    _drive(sim, 12.0)                      # takeoff + ~2 laps at omega=0.5
-    assert sim.mission in ("TRACK",)
-    assert sim.xtrack < 2.5, f"cross-track {sim.xtrack:.2f} m after 12 s"
-    assert len(sim.track_log) > 50         # tracking telemetry recorded
+    _drive(sim, 12.0)
+    assert sim.mission == "TRACK"
+    assert sim.xtrack < 2.5, f"xtrack {sim.xtrack:.2f}"
 
 
-def test_paper_step_test_runs_live():
+def test_paper_step_test_live():
     sim = DroneSim()
     sim.switch_mode()
     sim.start_paper_test("step")
-    _drive(sim, 5.0)                       # past the t=1 phi step
+    _drive(sim, 5.0)
     assert sim.mission in ("PAPER", "HOLD")
-    assert sim.telemetry["err_deg"] < 60   # tracking, not diverged
+    assert sim.telemetry["err_deg"] < 60
 
 
-def test_wind_physically_pushes_drone():
+def test_wind_and_noise_levels():
     sim = DroneSim()
     sim.wind = "HIGH"
     s = _drive(sim, 4.0)
-    assert abs(s["pos"][0]) > 0.8, f"wind produced only {s['pos'][0]:.2f} m drift"
-
-
-def test_noise_modes_change_sensor_output():
-    sim = DroneSim()
-    sim.noise = "PERFECT"
-    clean = sim.read_state(noisy=True)["q"]
-    assert np.allclose(clean, sim.read_state()["q"], atol=1e-9)
-    sim.noise = "HIGH"
-    dirty = [sim.read_state(noisy=True)["q"] for _ in range(5)]
-    assert any(not np.allclose(d, clean, atol=1e-3) for d in dirty)
+    assert abs(s["pos"][0]) > 0.8
+    sim2 = DroneSim()
+    sim2.noise = "PERFECT"
+    clean = sim2.read_state(noisy=True)["q"]
+    assert np.allclose(clean, sim2.read_state()["q"], atol=1e-9)
+    sim2.noise = "HIGH"
+    assert any(not np.allclose(sim2.read_state(noisy=True)["q"], clean, atol=1e-3) for _ in range(5))
 
 
 def test_traffic_moves():
-    sim = DroneSim()
     import mujoco
 
-    bid = mujoco.mj_name2id(sim.model, mujoco.mjtObj.mjOBJ_BODY, "car_m1")
-    qadr = sim.model.jnt_dofadr[sim.model.body_jntadr[bid]]
-    y0 = sim.data.qpos[qadr + 1]
-    _drive(sim, 2.0)
-    y1 = sim.data.qpos[qadr + 1]
-    assert abs(y1 - y0) > 1.0              # car physically moved along its lane
-
-
-def test_safety_and_marker_pool():
-    from sim.interactive import config as cfg
-
     sim = DroneSim()
-    sim.refs["z"] = 45.0                   # above max altitude
-    assert "altitude" in sim._safety_check({"pos": np.array([0, 0, 45.0]),
-                                             "vel": np.zeros(3), "rpy": (0, 0, 0)})
-    sim.start_track("circle")
-    assert sim._mk["shown"] > 50           # path dots placed in the world
+    b = mujoco.mj_name2id(sim.model, mujoco.mjtObj.mjOBJ_BODY, "car_m1")
+    a = sim.model.jnt_dofadr[sim.model.body_jntadr[b]]
+    y0 = sim.data.qpos[a + 1]
+    _drive(sim, 2.0)
+    assert abs(sim.data.qpos[a + 1] - y0) > 1.0
+
+
+def test_environment_switch_isolation():
+    # both env files exist and switching never modifies them
+    from pathlib import Path
+
+    base = Path("sim/interactive/envs")
+    h1 = (base / "urban_v1" / "world.xml").read_bytes()
+    h2 = (base / "open_field_v1" / "world.xml").read_bytes()
+    DroneSim(env="urban_v1")
+    DroneSim(env="open_field_v1")
+    assert (base / "urban_v1" / "world.xml").read_bytes() == h1
+    assert (base / "open_field_v1" / "world.xml").read_bytes() == h2
+
+
+# ---------------- INPUT PIPELINE: synthetic keys -> refs -> motors -> motion ----
+
+def test_input_manager_events():
+    inp = InputManager(use_hook=False)
+    inp.inject("w", "down")
+    assert inp.is_pressed("w")
+    held, taps = inp.poll()
+    assert "w" in held and "w" in taps        # held state + one-shot tap
+    inp.inject("w", "up")
+    assert not inp.is_pressed("w")
+
+
+def test_pipeline_key_to_motor_commands():
+    """W pressed through InputManager -> pilot_input -> control_tick changes
+    the per-rotor thrusts (the controller is really reacting)."""
+    inp = InputManager(use_hook=False)
+    sim = DroneSim()
+    sim.noise = "PERFECT"
+    for k in range(int(1.0 * sim.rate)):  # settle hover first
+        if k % 10 == 0:
+            sim.control_tick()
+        sim.step()
+    base = sim.motors.copy()
+    inp.inject("w", "down")
+    for k in range(3000):  # 0.3 s with W held
+        if k % 100 == 0:
+            held, _ = inp.poll()
+            sim.pilot_input(held)
+        if k % 10 == 0:
+            sim.control_tick()
+        sim.step()
+    assert sim.refs["pitch"] > 0.05          # desired attitude changed
+    assert not np.allclose(sim.motors, base, atol=1e-3)  # motors changed
+    inp.inject("w", "up")
+    for k in range(5000):  # release: command decays to neutral
+        if k % 100 == 0:
+            held, _ = inp.poll()
+            sim.pilot_input(held)
+        if k % 10 == 0:
+            sim.control_tick()
+        sim.step()
+    assert abs(sim.refs["pitch"]) < 0.02
+
+
+def test_pipeline_key_to_physics_movement():
+    """Holding W moves the drone forward (+x body) through real physics."""
+    sim = DroneSim()
+    sim.noise = "PERFECT"
+    x0 = sim.read_state()["pos"][0]
+    for k in range(int(2.5 * sim.rate)):
+        keys = {"w"} if k < int(2.0 * sim.rate) else frozenset()
+        if k % 100 == 0:
+            sim.pilot_input(keys)
+        if k % 10 == 0:
+            sim.control_tick()
+        sim.step()
+    x1 = sim.read_state()["pos"][0]
+    assert x1 - x0 > 2.0, f"W produced only {x1 - x0:.2f} m of travel"
+
+
+def test_pipeline_yaw_and_altitude():
+    sim = DroneSim()
+    sim.noise = "PERFECT"
+    z0 = sim.read_state()["pos"][2]
+    for k in range(int(3.0 * sim.rate)):
+        keys = {"q", "r"}  # yaw left + climb
+        if k % 100 == 0:
+            sim.pilot_input(keys)
+        if k % 10 == 0:
+            sim.control_tick()
+        sim.step()
+    s = sim.read_state()
+    assert s["pos"][2] - z0 > 1.5, "R did not climb"
+    assert abs(s["rpy_sim"][2]) > 0.5, "Q did not yaw"

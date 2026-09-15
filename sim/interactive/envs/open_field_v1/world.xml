@@ -1,0 +1,261 @@
+<mujoco model="paper_drone_open_field_v1">
+  <option timestep="1e-4" gravity="0 0 -9.81" integrator="implicitfast"/>
+  <visual>
+    <headlight ambient="0.4 0.4 0.4" diffuse="0.6 0.6 0.6" specular="0.12 0.12 0.12"/>
+    <global offwidth="1920" offheight="1080"/>
+    <map znear="0.01" zfar="120"/>
+  </visual>
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.5 0.6 0.78" rgb2="0.92 0.93 0.96" width="256" height="256"/>
+    <texture name="groundtex" type="2d" builtin="checker" rgb1="0.28 0.42 0.24" rgb2="0.34 0.48 0.28" width="200" height="200"/>
+    <material name="groundmat" texture="groundtex" texrepeat="14 14" specular="0.05"/>
+  </asset>
+  <worldbody>
+    <light directional="true" castshadow="true" pos="6 6 14" dir="0 0 -1"/>
+    <light directional="true" pos="-8 -6 10" dir="0.3 0.2 -1" diffuse="0.25 0.27 0.3"/>
+    <geom name="floor" type="plane" size="60 60 0.1" material="groundmat" rgba="0.7 0.75 0.7 1" friction="1.0 0.5 0.5"/>
+    <geom name="pad_base" type="cylinder" size="1.5 0.02" pos="0 -6 0.02" rgba="0.15 0.17 0.2 1" friction="1 0.5 0.5"/>
+    <geom name="pad_ring" type="cylinder" size="1.2 0.025" pos="0 -6 0.026" rgba="0.95 0.8 0.1 1" contype="0" conaffinity="0"/>
+    <geom name="pad_inner" type="cylinder" size="0.9 0.028" pos="0 -6 0.028" rgba="0.15 0.17 0.2 1" contype="0" conaffinity="0"/>
+    <geom name="land_ring" type="cylinder" size="1.0 0.025" pos="0 24 0.026" rgba="0.2 0.8 0.9 1" contype="0" conaffinity="0"/>
+    <geom name="tree_0_trunk" type="cylinder" size="0.09 1.6" pos="-8 4 1.6" rgba="0.36 0.26 0.16 1" friction="1 0.5 0.5"/>
+    <geom name="tree_0_top" type="sphere" size="0.95" pos="-8 4 2.4075" rgba="0.16 0.44 0.19 1" friction="1 0.5 0.5"/>
+    <geom name="tree_1_trunk" type="cylinder" size="0.09 1.4" pos="9 10 1.4" rgba="0.36 0.26 0.16 1" friction="1 0.5 0.5"/>
+    <geom name="tree_1_top" type="sphere" size="0.85" pos="9 10 2.1224999999999996" rgba="0.16 0.44 0.19 1" friction="1 0.5 0.5"/>
+    <geom name="tree_2_trunk" type="cylinder" size="0.09 1.8" pos="-11 16 1.8" rgba="0.36 0.26 0.16 1" friction="1 0.5 0.5"/>
+    <geom name="tree_2_top" type="sphere" size="1.0" pos="-11 16 2.65" rgba="0.16 0.44 0.19 1" friction="1 0.5 0.5"/>
+    <geom name="tree_3_trunk" type="cylinder" size="0.09 1.2" pos="7 -14 1.2" rgba="0.36 0.26 0.16 1" friction="1 0.5 0.5"/>
+    <geom name="tree_3_top" type="sphere" size="0.75" pos="7 -14 1.8375" rgba="0.16 0.44 0.19 1" friction="1 0.5 0.5"/>
+    <geom name="tree_4_trunk" type="cylinder" size="0.09 1.5" pos="-7 -18 1.5" rgba="0.36 0.26 0.16 1" friction="1 0.5 0.5"/>
+    <geom name="tree_4_top" type="sphere" size="0.9" pos="-7 -18 2.265" rgba="0.16 0.44 0.19 1" friction="1 0.5 0.5"/>
+    <geom name="tree_5_trunk" type="cylinder" size="0.09 1.3" pos="13 22 1.3" rgba="0.36 0.26 0.16 1" friction="1 0.5 0.5"/>
+    <geom name="tree_5_top" type="sphere" size="0.8" pos="13 22 1.98" rgba="0.16 0.44 0.19 1" friction="1 0.5 0.5"/>
+    <geom name="bush_0" type="sphere" size="0.4" pos="3 2 0.32" rgba="0.2 0.42 0.2 1" contype="0" conaffinity="0"/>
+    <geom name="bush_1" type="sphere" size="0.4" pos="-3 10 0.32" rgba="0.2 0.42 0.2 1" contype="0" conaffinity="0"/>
+    <geom name="bush_2" type="sphere" size="0.4" pos="4 16 0.32" rgba="0.2 0.42 0.2 1" contype="0" conaffinity="0"/>
+    <geom name="bush_3" type="sphere" size="0.4" pos="-4 -12 0.32" rgba="0.2 0.42 0.2 1" contype="0" conaffinity="0"/>
+  <body name="car_1" pos="0 -20 0">
+    <freejoint name="car_1_j"/>
+    <geom name="car_1" type="box" size="0.42 0.95 0.16" pos="0 0 0.25" rgba="0.7 0.7 0.72 1" euler="0 0 0" friction="1 0.5 0.5"/>
+    <geom name="car_1_hood" type="box" size="0.378 0.209 0.08" pos="0 1.05 0.194" rgba="0.7 0.7 0.72 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_1_trunk" type="box" size="0.378 0.17099999999999999 0.08" pos="0 -1.03 0.194" rgba="0.7 0.7 0.72 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_1_cabin" type="box" size="0.36 0.42 0.14" pos="0 -0.1425 0.55" rgba="0.7 0.7 0.72 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_1_glass" type="box" size="0.36719999999999997 0.336 0.07700000000000001" pos="0 -0.1425 0.543" rgba="0.15 0.2 0.28 0.85" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_1_w0" type="cylinder" size="0.09 0.06" pos="0.42 0.5225 0.09" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_1_w1" type="cylinder" size="0.09 0.06" pos="0.42 -0.5225 0.09" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_1_w2" type="cylinder" size="0.09 0.06" pos="-0.42 0.5225 0.09" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_1_w3" type="cylinder" size="0.09 0.06" pos="-0.42 -0.5225 0.09" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_1_hl" type="box" size="0.21 0.04 0.04" pos="0 1.1099999999999999 0.25" rgba="1 0.95 0.6 1" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_1_tl" type="box" size="0.21 0.04 0.04" pos="0 -1.1099999999999999 0.25" rgba="0.9 0.15 0.1 1" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+  </body>
+  <body name="truck_1" pos="6 -20 0">
+    <freejoint name="truck_1_j"/>
+    <geom name="truck_1" type="box" size="0.55 2.1999999999999997 0.55" pos="0 -0.075 0.68" rgba="0.85 0.82 0.78 1" euler="0 0 0" friction="1 0.5 0.5"/>
+    <geom name="truck_1_cab" type="box" size="0.52 0.5 0.5" pos="0 2.17 0.63" rgba="0.35 0.45 0.6 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_1_cabglass" type="box" size="0.468 0.15 0.275" pos="0 2.275 0.755" rgba="0.15 0.2 0.28 0.85" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_1_box" type="box" size="0.539 1.55 0.528" pos="0 -0.175 0.68" rgba="0.85 0.82 0.78 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_1_rib0" type="box" size="0.55 0.015 0.12" pos="0 -1.075 0.68" rgba="0.35 0.45 0.6 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_1_rib1" type="box" size="0.55 0.015 0.12" pos="0 -0.175 0.68" rgba="0.35 0.45 0.6 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_1_rib2" type="box" size="0.55 0.015 0.12" pos="0 0.7250000000000001 0.68" rgba="0.35 0.45 0.6 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_1_w0r" type="cylinder" size="0.13 0.08" pos="0.5700000000000001 1.1625 0.13" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_1_w0l" type="cylinder" size="0.13 0.08" pos="-0.5700000000000001 1.1625 0.13" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_1_w1r" type="cylinder" size="0.13 0.08" pos="0.5700000000000001 0.0 0.13" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_1_w1l" type="cylinder" size="0.13 0.08" pos="-0.5700000000000001 0.0 0.13" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_1_w2r" type="cylinder" size="0.13 0.08" pos="0.5700000000000001 -1.2400000000000002 0.13" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_1_w2l" type="cylinder" size="0.13 0.08" pos="-0.5700000000000001 -1.2400000000000002 0.13" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_1_hl" type="box" size="0.08 0.04 0.05" pos="0 2.5999999999999996 0.48" rgba="1 0.95 0.6 1" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+  </body>
+  <body name="car_m1" pos="1.1 -45 0">
+    <freejoint name="car_m1_j"/>
+    <geom name="car_m1" type="box" size="0.42 0.95 0.16" pos="0 0 0.25" rgba="0.8 0.3 0.2 1" euler="0 0 0" friction="1 0.5 0.5"/>
+    <geom name="car_m1_hood" type="box" size="0.378 0.209 0.08" pos="0 1.05 0.194" rgba="0.8 0.3 0.2 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m1_trunk" type="box" size="0.378 0.17099999999999999 0.08" pos="0 -1.03 0.194" rgba="0.8 0.3 0.2 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m1_cabin" type="box" size="0.36 0.42 0.14" pos="0 -0.1425 0.55" rgba="0.8 0.3 0.2 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m1_glass" type="box" size="0.36719999999999997 0.336 0.07700000000000001" pos="0 -0.1425 0.543" rgba="0.15 0.2 0.28 0.85" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m1_w0" type="cylinder" size="0.09 0.06" pos="0.42 0.5225 0.09" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m1_w1" type="cylinder" size="0.09 0.06" pos="0.42 -0.5225 0.09" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m1_w2" type="cylinder" size="0.09 0.06" pos="-0.42 0.5225 0.09" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m1_w3" type="cylinder" size="0.09 0.06" pos="-0.42 -0.5225 0.09" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m1_hl" type="box" size="0.21 0.04 0.04" pos="0 1.1099999999999999 0.25" rgba="1 0.95 0.6 1" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m1_tl" type="box" size="0.21 0.04 0.04" pos="0 -1.1099999999999999 0.25" rgba="0.9 0.15 0.1 1" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+  </body>
+  <body name="car_m2" pos="-1.1 45 0">
+    <freejoint name="car_m2_j"/>
+    <geom name="car_m2" type="box" size="0.42 0.95 0.16" pos="0 0 0.25" rgba="0.25 0.45 0.8 1" euler="0 0 180" friction="1 0.5 0.5"/>
+    <geom name="car_m2_hood" type="box" size="0.378 0.209 0.08" pos="0 1.05 0.194" rgba="0.25 0.45 0.8 1" euler="0 0 180" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m2_trunk" type="box" size="0.378 0.17099999999999999 0.08" pos="0 -1.03 0.194" rgba="0.25 0.45 0.8 1" euler="0 0 180" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m2_cabin" type="box" size="0.36 0.42 0.14" pos="0 -0.1425 0.55" rgba="0.25 0.45 0.8 1" euler="0 0 180" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m2_glass" type="box" size="0.36719999999999997 0.336 0.07700000000000001" pos="0 -0.1425 0.543" rgba="0.15 0.2 0.28 0.85" euler="0 0 180" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m2_w0" type="cylinder" size="0.09 0.06" pos="0.42 0.5225 0.09" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m2_w1" type="cylinder" size="0.09 0.06" pos="0.42 -0.5225 0.09" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m2_w2" type="cylinder" size="0.09 0.06" pos="-0.42 0.5225 0.09" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m2_w3" type="cylinder" size="0.09 0.06" pos="-0.42 -0.5225 0.09" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m2_hl" type="box" size="0.21 0.04 0.04" pos="0 1.1099999999999999 0.25" rgba="1 0.95 0.6 1" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="car_m2_tl" type="box" size="0.21 0.04 0.04" pos="0 -1.1099999999999999 0.25" rgba="0.9 0.15 0.1 1" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+  </body>
+  <body name="truck_m1" pos="1.1 48 0">
+    <freejoint name="truck_m1_j"/>
+    <geom name="truck_m1" type="box" size="0.55 2.1999999999999997 0.55" pos="0 -0.075 0.68" rgba="0.85 0.82 0.78 1" euler="0 0 0" friction="1 0.5 0.5"/>
+    <geom name="truck_m1_cab" type="box" size="0.52 0.5 0.5" pos="0 2.17 0.63" rgba="0.35 0.45 0.6 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_m1_cabglass" type="box" size="0.468 0.15 0.275" pos="0 2.275 0.755" rgba="0.15 0.2 0.28 0.85" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_m1_box" type="box" size="0.539 1.55 0.528" pos="0 -0.175 0.68" rgba="0.85 0.82 0.78 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_m1_rib0" type="box" size="0.55 0.015 0.12" pos="0 -1.075 0.68" rgba="0.35 0.45 0.6 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_m1_rib1" type="box" size="0.55 0.015 0.12" pos="0 -0.175 0.68" rgba="0.35 0.45 0.6 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_m1_rib2" type="box" size="0.55 0.015 0.12" pos="0 0.7250000000000001 0.68" rgba="0.35 0.45 0.6 1" euler="0 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_m1_w0r" type="cylinder" size="0.13 0.08" pos="0.5700000000000001 1.1625 0.13" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_m1_w0l" type="cylinder" size="0.13 0.08" pos="-0.5700000000000001 1.1625 0.13" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_m1_w1r" type="cylinder" size="0.13 0.08" pos="0.5700000000000001 0.0 0.13" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_m1_w1l" type="cylinder" size="0.13 0.08" pos="-0.5700000000000001 0.0 0.13" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_m1_w2r" type="cylinder" size="0.13 0.08" pos="0.5700000000000001 -1.2400000000000002 0.13" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_m1_w2l" type="cylinder" size="0.13 0.08" pos="-0.5700000000000001 -1.2400000000000002 0.13" rgba="0.08 0.08 0.09 1" euler="90 0 0" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+    <geom name="truck_m1_hl" type="box" size="0.08 0.04 0.05" pos="0 2.5999999999999996 0.48" rgba="1 0.95 0.6 1" contype="0" conaffinity="0" friction="1 0.5 0.5"/>
+  </body>
+
+    <!-- the exact paper drone (mass/inertia = benchmark values) -->
+    <body name="quadrotor" pos="0 -6 1.2">
+      <freejoint name="root"/>
+      <inertial pos="0 0 0" mass="0.2" diaginertia="6.5e-4 6.5e-4 1.2e-3"/>
+      <geom name="frame" type="box" size="0.17 0.17 0.015" group="3" friction="0.8 0.5 0.5"/>
+      <geom name="shell" type="ellipsoid" size="0.085 0.085 0.028" pos="0 0 0.018" rgba="0.22 0.24 0.28 1" contype="0" conaffinity="0"/>
+      <geom name="plate" type="cylinder" size="0.09 0.008" pos="0 0 -0.004" rgba="0.15 0.16 0.18 1" contype="0" conaffinity="0"/>
+      <geom name="arm1" type="box" size="0.075 0.007 0.005" euler="0 0 45" pos="0.053033 0.053033 0" rgba="0.28 0.3 0.34 1" contype="0" conaffinity="0"/>
+      <geom name="arm2" type="box" size="0.075 0.007 0.005" euler="0 0 -45" pos="-0.053033 -0.053033 0" rgba="0.28 0.3 0.34 1" contype="0" conaffinity="0"/>
+      <geom name="arm3" type="box" size="0.075 0.007 0.005" euler="0 0 -45" pos="0.053033 -0.053033 0" rgba="0.28 0.3 0.34 1" contype="0" conaffinity="0"/>
+      <geom name="arm4" type="box" size="0.075 0.007 0.005" euler="0 0 45" pos="-0.053033 0.053033 0" rgba="0.28 0.3 0.34 1" contype="0" conaffinity="0"/>
+      <geom name="cam" type="box" size="0.014 0.01 0.008" pos="0.098 0 0.02" rgba="0.1 0.1 0.1 1" contype="0" conaffinity="0"/>
+      <geom name="lens" type="cylinder" size="0.004 0.006" euler="0 90 0" pos="0.113 0 0.02" rgba="0.05 0.08 0.12 1" contype="0" conaffinity="0"/>
+      <geom name="led" type="sphere" size="0.006" pos="-0.095 0 0.02" rgba="1 0.1 0.1 1" contype="0" conaffinity="0"/>
+      <geom name="mount1" type="cylinder" size="0.011 0.012" pos="0.106066 0.106066 0.014" rgba="0.18 0.18 0.2 1" contype="0" conaffinity="0"/>
+      <geom name="mount2" type="cylinder" size="0.011 0.012" pos="-0.106066 -0.106066 0.014" rgba="0.18 0.18 0.2 1" contype="0" conaffinity="0"/>
+      <geom name="mount3" type="cylinder" size="0.011 0.012" pos="0.106066 -0.106066 0.014" rgba="0.18 0.18 0.2 1" contype="0" conaffinity="0"/>
+      <geom name="mount4" type="cylinder" size="0.011 0.012" pos="-0.106066 0.106066 0.014" rgba="0.18 0.18 0.2 1" contype="0" conaffinity="0"/>
+      <geom name="prop1" type="cylinder" size="0.045 0.0012" pos="0.106066 0.106066 0.03" rgba="0.9 0.2 0.2 0.32" contype="0" conaffinity="0"/>
+      <geom name="prop2" type="cylinder" size="0.045 0.0012" pos="-0.106066 -0.106066 0.03" rgba="0.2 0.25 0.9 0.32" contype="0" conaffinity="0"/>
+      <geom name="prop3" type="cylinder" size="0.045 0.0012" pos="0.106066 -0.106066 0.03" rgba="0.2 0.8 0.25 0.32" contype="0" conaffinity="0"/>
+      <geom name="prop4" type="cylinder" size="0.045 0.0012" pos="-0.106066 0.106066 0.03" rgba="0.95 0.85 0.2 0.32" contype="0" conaffinity="0"/>
+    </body>
+
+    <!-- path visualization pool (moved by the app; visual only) -->
+    <geom name="mk_d0" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d1" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d2" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d3" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d4" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d5" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d6" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d7" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d8" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d9" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d10" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d11" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d12" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d13" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d14" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d15" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d16" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d17" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d18" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d19" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d20" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d21" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d22" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d23" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d24" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d25" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d26" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d27" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d28" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d29" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d30" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d31" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d32" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d33" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d34" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d35" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d36" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d37" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d38" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d39" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d40" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d41" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d42" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d43" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d44" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d45" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d46" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d47" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d48" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d49" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d50" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d51" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d52" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d53" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d54" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d55" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d56" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d57" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d58" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d59" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d60" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d61" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d62" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d63" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d64" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d65" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d66" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d67" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d68" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d69" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d70" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d71" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d72" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d73" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d74" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d75" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d76" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d77" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d78" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d79" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d80" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d81" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d82" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d83" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d84" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d85" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d86" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d87" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d88" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d89" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d90" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d91" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d92" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d93" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d94" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_d95" type="sphere" size="0.07" pos="0 0 -10" rgba="1 0.85 0.2 0.9" contype="0" conaffinity="0"/>
+    <geom name="mk_w0" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w1" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w2" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w3" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w4" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w5" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w6" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w7" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w8" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w9" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w10" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w11" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w12" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w13" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w14" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w15" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w16" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w17" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w18" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w19" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w20" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w21" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w22" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_w23" type="sphere" size="0.16" pos="0 0 -10" rgba="0.2 0.9 0.3 0.95" contype="0" conaffinity="0"/>
+    <geom name="mk_target" type="sphere" size="0.22" pos="0 0 -10" rgba="1 0.2 0.2 1" contype="0" conaffinity="0"/>
+  </worldbody>
+</mujoco>
