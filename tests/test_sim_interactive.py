@@ -102,6 +102,7 @@ def test_paper_step_test_live():
 
 def test_wind_and_noise_levels():
     sim = DroneSim()
+    sim.lock_position = False  # wind needs translation to show drift
     sim.wind = "HIGH"
     s = _drive(sim, 4.0)
     assert abs(s["pos"][0]) > 0.8
@@ -182,9 +183,11 @@ def test_pipeline_key_to_motor_commands():
 
 
 def test_pipeline_key_to_physics_movement():
-    """Holding W moves the drone forward (+x body) through real physics."""
+    """Holding W moves the drone forward (+x body) through real physics
+    (position unlocked — tests the full 6-DOF pipeline)."""
     sim = DroneSim()
     sim.noise = "PERFECT"
+    sim.lock_position = False
     x0 = sim.read_state()["pos"][0]
     for k in range(int(2.5 * sim.rate)):
         keys = {"w"} if k < int(2.0 * sim.rate) else frozenset()
@@ -200,6 +203,7 @@ def test_pipeline_key_to_physics_movement():
 def test_pipeline_yaw_and_altitude():
     sim = DroneSim()
     sim.noise = "PERFECT"
+    sim.lock_position = False
     z0 = sim.read_state()["pos"][2]
     for k in range(int(3.0 * sim.rate)):
         keys = {"q", "r"}  # yaw left + climb
