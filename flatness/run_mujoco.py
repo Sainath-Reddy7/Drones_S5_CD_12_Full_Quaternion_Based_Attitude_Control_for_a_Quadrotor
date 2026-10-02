@@ -53,11 +53,12 @@ class ActuatorLag:
 def run(speed: float = 0.5, cycles: float = 2.0, seed: int = 0, noise: float = 0.0,
         out_root: Path | None = None, show: bool = False,
         frame_cb=None, xml_path: Path | None = None) -> dict:
-    """`frame_cb(t, data)` (if given) is called at every 200 Hz control tick —
-    the offscreen recorder (flatness/record_mujoco.py) uses it to capture
-    in-engine frames without duplicating the control loop. `xml_path` swaps
-    the plant scene (the recorder uses flatness/circle_scene.xml, which adds
-    only visual-only markers)."""
+    """`frame_cb(t, data, q_d, p_ref)` (if given) is called at every 200 Hz
+    control tick with the live state, desired attitude quaternion and
+    reference position — the offscreen recorder (flatness/record_mujoco.py)
+    uses it to capture in-engine frames without duplicating the control loop.
+    `xml_path` swaps the plant scene (the recorder uses
+    flatness/circle_scene.xml, which adds only visual-only markers)."""
     import mujoco
 
     model = mujoco.MjModel.from_xml_path(str(xml_path or XML_PATH))
@@ -142,7 +143,7 @@ def run(speed: float = 0.5, cycles: float = 2.0, seed: int = 0, noise: float = 0
         if viewer is not None and k % 40 == 0:
             viewer.sync()
         if frame_cb is not None and k % ctrl_every == 0 and k > 0:
-            frame_cb(t, data)
+            frame_cb(t, data, q_d, ref.p)
 
     if viewer is not None:
         viewer.close()

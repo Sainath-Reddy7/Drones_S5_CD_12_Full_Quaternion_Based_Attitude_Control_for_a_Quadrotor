@@ -35,7 +35,6 @@ HOME = (0.0, 0.0, 2.0)   # puppet stage point: attitude tests drift kilometers
 
 
 TRIAD_XML = """
-  <worldbody>
     <!-- reference-attitude triad: three MOCAP bodies (the runtime-movable
          mechanism MuJoCo actually propagates through mj_forward — static
          worldbody geom_pos updates do NOT reach geom_xpos after MjData
@@ -49,7 +48,11 @@ TRIAD_XML = """
     <body name="refax_z" mocap="true" pos="0 0 2">
       <geom type="capsule" size="0.010 0.45" rgba="0.15 0.4 1 1" contype="0" conaffinity="0"/>
     </body>
-  </worldbody>
+    <!-- moving reference point (path planning: where on the path the vehicle
+         should be right now) -->
+    <body name="refball" mocap="true" pos="0 0 2">
+      <geom type="sphere" size="0.055" rgba="1 0.85 0.1 1" contype="0" conaffinity="0"/>
+    </body>
 """
 
 
@@ -64,10 +67,23 @@ def make_render_pair(xml_path: Path):
     frame via data.mocap_pos/mocap_quat."""
     import mujoco
 
-    xml = Path(xml_path).read_text(encoding="utf-8")
-    xml = xml.replace('contype="0" conaffinity="0"', 'contype="1" conaffinity="1"')
-    xml = xml.replace("</mujoco>", TRIAD_XML + "</mujoco>")
-    model = mujoco.MjModel.from_xml_string(xml)
+    import tempfile
+
+    src = Path(xml_path)
+    xml = src.read_text(encoding="utf-8")
+    xml = xml.replace("</worldbody>", TRIAD_XML + "</worldbody>")
+    # write beside the source so <include> paths resolve; load; remove
+    tmp = src.with_name(src.stem + "_renderpuppet.tmp.xml")
+    tmp.write_text(xml, encoding="utf-8")
+    try:
+        model = mujoco.MjModel.from_xml_path(str(tmp))
+    finally:
+        tmp.unlink(missing_ok=True)
+    # rendering flags post-compile: the offscreen Renderer skips geoms with
+    # contype=0 conaffinity=0 (the repo's visual-only attribute) — flip all
+    # for the puppet. It never steps, so collisions are never resolved.
+    model.geom_contype[:] = 1
+    model.geom_conaffinity[:] = 1
     opt = mujoco.MjvOption()
     for g in range(6):
         opt.geomgroup[g] = 1
@@ -86,6 +102,11 @@ def set_triad(data, pos, R) -> None:
         mujoco.mju_quatZ2Vec(quat_buf, axis)
         data.mocap_pos[i] = pos            # capsule spans pos +/- 0.45 on axis
         data.mocap_quat[i] = quat_buf
+
+
+def set_refpoint(data, pos) -> None:
+    """Move the yellow reference-point ball (last mocap body)."""
+    data.mocap_pos[3] = np.asarray(pos, float)
 
 
 def record(scenario: str, every_s: float = 0.12, seed: int = 0) -> dict:

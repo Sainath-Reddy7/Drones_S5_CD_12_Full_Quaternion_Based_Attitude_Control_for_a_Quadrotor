@@ -73,12 +73,15 @@ No rotor saturation anywhere (1.95 N limit). Radial accuracy ≈ 97%.
 
 Recorded by `python -m flatness.record_mujoco` directly off the MuJoCo
 renderer (offscreen, orbiting chase camera, `flatness/circle_scene.xml`
-draws the reference circle as visual-only markers). The recorded run IS the
-benchmark run — same code path, and its metrics are **bit-identical** to the
-plain-XML `run_mujoco` numbers (radial RMS 0.028119440263898822 m), proving
-the scene markers are physics-neutral.
+draws the reference circle as visual-only markers). What you see: **solid
+drone = actual**, **RGB axes = the flatness map's desired attitude q_d**,
+**yellow ball = the reference point on the path right now**, orange ring =
+the 1 m circle at 1 m altitude. The recorded run IS the benchmark run —
+same code path, metrics **bit-identical** to the plain-XML `run_mujoco`
+numbers (radial RMS 0.028119440263898822 m), proving the scene markers and
+render puppet are physics-neutral.
 
-Live, keyboard-free viewing of the same simulation:
+Live viewing of the same simulation:
 `.venv310\Scripts\python.exe -m flatness.run_mujoco --gui`
 
 ### Flatness circle — MuJoCo contact physics (path trace)

@@ -24,7 +24,6 @@ import numpy as np
 from matplotlib.animation import FuncAnimation, PillowWriter
 
 from flatness.run_mujoco import run
-from sim.mujoco.record import make_render_pair
 
 SCENE = Path(__file__).with_name("circle_scene.xml")
 OUT = Path(__file__).resolve().parent.parent / "results" / "recordings"
@@ -38,32 +37,39 @@ Z_REF = 1.0         # circle altitude [m]
 def record(cycles: float = 2.0, noise: float = 0.0, speed: float = 0.5) -> dict:
     import mujoco
 
+    from quat_sitl import quaternion as quat
+
+    from sim.mujoco.record import make_render_pair, set_refpoint, set_triad
+
     # render puppet: MuJoCo's offscreen Renderer skips the drone's
     # visual-only (contype=0) geoms — see sim/mujoco/record.make_render_pair
     r_model, r_data, opt = make_render_pair(SCENE)
     renderer = mujoco.Renderer(r_model, height=H, width=W)
     cam = mujoco.MjvCamera()
     frames: list[np.ndarray] = []
-    stats: list[tuple[float, float, float]] = []
+    stats: list[tuple[float, float, float, float]] = []
     last_cap = [-1.0]
 
-    def frame_cb(t: float, data) -> None:
+    def frame_cb(t: float, data, q_d, p_ref) -> None:
         if t - last_cap[0] < EVERY_S:
             return
         last_cap[0] = t
         p = np.array(data.qpos[0:3])
         cam.type = mujoco.mjtCamera.mjCAMERA_FREE
-        cam.lookat[:] = [p[0] * 0.7, p[1] * 0.7, 0.55]  # frame drone + circle
-        cam.distance = 3.4
+        cam.lookat[:] = [p[0] * 0.8, p[1] * 0.8, 0.6]  # frame drone + circle
+        cam.distance = 2.6
         cam.azimuth = -62.0 + 8.0 * t                     # slow orbit
         cam.elevation = -16.0
         r_data.qpos[:] = data.qpos          # puppet the render copy
         r_data.qvel[:] = data.qvel
+        set_triad(r_data, p, quat.to_dcm(q_d))   # desired attitude (q_d)
+        set_refpoint(r_data, p_ref)              # where on the path to be now
         mujoco.mj_forward(r_model, r_data)
         renderer.update_scene(r_data, camera=cam, scene_option=opt)
         frames.append(renderer.render())
         radial = float(np.linalg.norm(p[:2]))
-        stats.append((float(t), radial, float(p[2])))
+        track_err = float(np.linalg.norm(p - p_ref))
+        stats.append((float(t), radial, float(p[2]), track_err))
 
     summary = run(cycles=cycles, noise=noise, speed=speed,
                   frame_cb=frame_cb, xml_path=SCENE,
@@ -78,11 +84,13 @@ def record(cycles: float = 2.0, noise: float = 0.0, speed: float = 0.5) -> dict:
 
     def frame(i: int):
         im.set_array(frames[i])
-        t, radial, z = stats[i]
+        t, radial, z, track_err = stats[i]
         title.set_text(
             "Choutri & Lagha 2017 — flatness + LQR circle, MuJoCo contact physics\n"
             f"t = {t:5.1f} s    radial = {radial:5.3f} m (ref {R_REF:.3f})"
-            f"    z = {z:5.3f} m (ref {Z_REF:.3f})")
+            f"    z = {z:5.3f} m (ref {Z_REF:.3f})    3D tracking err = {track_err:5.3f} m\n"
+            "solid drone = actual   RGB axes = desired attitude (q_d)   "
+            "yellow ball = reference point   orange ring = path")
         return [im]
 
     OUT.mkdir(parents=True, exist_ok=True)
