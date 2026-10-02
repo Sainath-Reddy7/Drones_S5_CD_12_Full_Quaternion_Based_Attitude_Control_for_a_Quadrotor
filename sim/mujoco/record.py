@@ -34,17 +34,39 @@ HOME = (0.0, 0.0, 2.0)   # puppet stage point: attitude tests drift kilometers
 # rates are live) with the pad/trees as backdrop and a slow-orbit camera.
 
 
+TRIAD_XML = """
+  <worldbody>
+    <!-- reference-attitude triad: three MOCAP bodies (the runtime-movable
+         mechanism MuJoCo actually propagates through mj_forward — static
+         worldbody geom_pos updates do NOT reach geom_xpos after MjData
+         creation). The recorder reorients them to q_ref each frame. -->
+    <body name="refax_x" mocap="true" pos="0 0 2">
+      <geom type="capsule" size="0.010 0.45" rgba="1 0.1 0.1 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="refax_y" mocap="true" pos="0 0 2">
+      <geom type="capsule" size="0.010 0.45" rgba="0.1 1 0.1 1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="refax_z" mocap="true" pos="0 0 2">
+      <geom type="capsule" size="0.010 0.45" rgba="0.15 0.4 1 1" contype="0" conaffinity="0"/>
+    </body>
+  </worldbody>
+"""
+
+
 def make_render_pair(xml_path: Path):
-    """(render_model, render_data) puppet copy of the scene for offscreen
+    """(render_model, render_data, opt) puppet copy of the scene for offscreen
     rendering. MuJoCo 3.x's classic Renderer skips geoms with contype=0
     conaffinity=0 (the repo's 'visual-only' attribute) and MjvOption hides
     group 3+ — the drone's entire visual upgrade is both, so the vehicle
-    never rasterizes offscreen. The puppet copy flips those flags; it is
-    never stepped, so the physics model is untouched."""
+    never rasterizes offscreen. The puppet copy flips those flags; it is never
+    stepped, so the physics model is untouched. The injected refax_* mocap
+    bodies are the reference-attitude triad the recorder reorients each
+    frame via data.mocap_pos/mocap_quat."""
     import mujoco
 
     xml = Path(xml_path).read_text(encoding="utf-8")
     xml = xml.replace('contype="0" conaffinity="0"', 'contype="1" conaffinity="1"')
+    xml = xml.replace("</mujoco>", TRIAD_XML + "</mujoco>")
     model = mujoco.MjModel.from_xml_string(xml)
     opt = mujoco.MjvOption()
     for g in range(6):
@@ -52,34 +74,58 @@ def make_render_pair(xml_path: Path):
     return model, mujoco.MjData(model), opt
 
 
+def set_triad(data, pos, R) -> None:
+    """Orient the reference triad mocap bodies along the rows of R (body->world
+    reference attitude) centered at pos. Each capsule runs along its body z,
+    so each mocap body is rotated from z onto its world axis."""
+    import mujoco
+
+    quat_buf = np.zeros(4)
+    for i in range(3):
+        axis = R.T @ np.eye(3)[i]          # i-th body axis expressed in world
+        mujoco.mju_quatZ2Vec(quat_buf, axis)
+        data.mocap_pos[i] = pos            # capsule spans pos +/- 0.45 on axis
+        data.mocap_quat[i] = quat_buf
+
+
 def record(scenario: str, every_s: float = 0.12, seed: int = 0) -> dict:
     import mujoco
 
-    r_model, r_data, opt = make_render_pair(Path(__file__).with_name("quadrotor.xml"))
+    from quat_sitl import quaternion as quat
+
+    r_model, r_data, opt = make_render_pair(
+        Path(__file__).with_name("quadrotor.xml"))
     renderer = mujoco.Renderer(r_model, height=H, width=W)
     cam = mujoco.MjvCamera()
     frames: list[np.ndarray] = []
     stats: list[tuple[float, float]] = []
+    eulers: list[np.ndarray] = []
     last = [-1.0]
 
     def frame_cb(t: float, data, info) -> None:
         if t - last[0] < every_s:
             return
         last[0] = t
+        # fixed-horizon camera: a stable view is what makes tilt readable
         cam.type = mujoco.mjtCamera.mjCAMERA_FREE
         cam.lookat[:] = HOME
-        cam.distance = 1.4
-        cam.azimuth = 25.0 + 6.0 * t          # slow orbit: all attitude angles
-        cam.elevation = -18.0
-        r_data.qpos[0:3] = HOME               # puppet: live attitude, fixed stage
+        cam.distance = 2.1
+        cam.azimuth = -35.0
+        cam.elevation = -12.0
+
+        # puppet: live attitude on a fixed stage + reference triad from q_ref
+        r_data.qpos[0:3] = HOME
         r_data.qpos[3:7] = data.qpos[3:7]
         r_data.qvel[:] = data.qvel
+        set_triad(r_data, np.array(HOME), quat.to_dcm(info["q_ref"]))
         mujoco.mj_forward(r_model, r_data)
         renderer.update_scene(r_data, camera=cam, scene_option=opt)
         frames.append(renderer.render())
+
         q_ref, q_m = info["q_ref"], info["q_m"]
         err = float(np.degrees(2 * np.arccos(np.clip(abs(float(np.dot(q_ref, q_m))), 0, 1))))
         stats.append((float(t), err))
+        eulers.append(np.degrees(quat.to_euler(info["q_ref"])))
 
     summary = run(scenario, seed=seed, frame_cb=frame_cb,
                   out_root=OUT.parent / "sim_mujoco")
@@ -94,9 +140,12 @@ def record(scenario: str, every_s: float = 0.12, seed: int = 0) -> dict:
     def frame(i: int):
         im.set_array(frames[i])
         t, err = stats[i]
+        phi_r, theta_r, psi_r = eulers[i]
         title.set_text(
-            f"Fresk & Nikolakopoulos — {scenario.upper()} test, MuJoCo contact physics\n"
-            f"t = {t:6.2f} s    quaternion error = {err:6.1f} deg (paper noise ±0.1)")
+            f"Fresk & Nikolakopoulos — {scenario.upper()} test  (MuJoCo, paper noise ±0.1)\n"
+            f"t = {t:6.2f} s    quaternion error = {err:6.1f} deg\n"
+            f"reference  φ θ ψ = {phi_r:+6.1f} {theta_r:+6.1f} {psi_r:+6.1f} deg"
+            f"   —  solid drone = actual, RGB axes = reference")
         return [im]
 
     OUT.mkdir(parents=True, exist_ok=True)
