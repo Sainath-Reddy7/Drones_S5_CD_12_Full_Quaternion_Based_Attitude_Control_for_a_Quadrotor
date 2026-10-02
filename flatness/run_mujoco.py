@@ -145,6 +145,8 @@ def run(speed: float = 0.5, cycles: float = 2.0, seed: int = 0, noise: float = 0
     }
 
     out_dir = out_root or (Path.cwd() / "results" / "flatness")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    np.savez(out_dir / "mujoco_circle_log.npz", **log)  # recordings source
     _plots(log, vehicle, out_dir, show, label=" (MuJoCo contact physics)",
            prefix="mujoco_")
     return summary
