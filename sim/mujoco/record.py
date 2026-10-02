@@ -28,14 +28,35 @@ from sim.mujoco.run import run
 OUT = Path(__file__).resolve().parent.parent.parent / "results" / "recordings"
 W, H = 720, 540
 FPS = 12
+HOME = (0.0, 0.0, 2.0)   # puppet stage point: attitude tests drift kilometers
+# by design, and MuJoCo's offscreen path loses bodies far from the world
+# origin — so the render puppet flies at a fixed home (orientation and body
+# rates are live) with the pad/trees as backdrop and a slow-orbit camera.
+
+
+def make_render_pair(xml_path: Path):
+    """(render_model, render_data) puppet copy of the scene for offscreen
+    rendering. MuJoCo 3.x's classic Renderer skips geoms with contype=0
+    conaffinity=0 (the repo's 'visual-only' attribute) and MjvOption hides
+    group 3+ — the drone's entire visual upgrade is both, so the vehicle
+    never rasterizes offscreen. The puppet copy flips those flags; it is
+    never stepped, so the physics model is untouched."""
+    import mujoco
+
+    xml = Path(xml_path).read_text(encoding="utf-8")
+    xml = xml.replace('contype="0" conaffinity="0"', 'contype="1" conaffinity="1"')
+    model = mujoco.MjModel.from_xml_string(xml)
+    opt = mujoco.MjvOption()
+    for g in range(6):
+        opt.geomgroup[g] = 1
+    return model, mujoco.MjData(model), opt
 
 
 def record(scenario: str, every_s: float = 0.12, seed: int = 0) -> dict:
     import mujoco
 
-    model = mujoco.MjModel.from_xml_path(
-        str(Path(__file__).with_name("quadrotor.xml")))
-    renderer = mujoco.Renderer(model, height=H, width=W)
+    r_model, r_data, opt = make_render_pair(Path(__file__).with_name("quadrotor.xml"))
+    renderer = mujoco.Renderer(r_model, height=H, width=W)
     cam = mujoco.MjvCamera()
     frames: list[np.ndarray] = []
     stats: list[tuple[float, float]] = []
@@ -45,13 +66,16 @@ def record(scenario: str, every_s: float = 0.12, seed: int = 0) -> dict:
         if t - last[0] < every_s:
             return
         last[0] = t
-        p = np.array(data.qpos[0:3])
         cam.type = mujoco.mjtCamera.mjCAMERA_FREE
-        cam.lookat[:] = [p[0], p[1], p[2]]   # chase: the scenarios drift by design
-        cam.distance = 1.25
-        cam.azimuth = 25.0
-        cam.elevation = -20.0
-        renderer.update_scene(data, camera=cam)
+        cam.lookat[:] = HOME
+        cam.distance = 1.4
+        cam.azimuth = 25.0 + 6.0 * t          # slow orbit: all attitude angles
+        cam.elevation = -18.0
+        r_data.qpos[0:3] = HOME               # puppet: live attitude, fixed stage
+        r_data.qpos[3:7] = data.qpos[3:7]
+        r_data.qvel[:] = data.qvel
+        mujoco.mj_forward(r_model, r_data)
+        renderer.update_scene(r_data, camera=cam, scene_option=opt)
         frames.append(renderer.render())
         q_ref, q_m = info["q_ref"], info["q_m"]
         err = float(np.degrees(2 * np.arccos(np.clip(abs(float(np.dot(q_ref, q_m))), 0, 1))))

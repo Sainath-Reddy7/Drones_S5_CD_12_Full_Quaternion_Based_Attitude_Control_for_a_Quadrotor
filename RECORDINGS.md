@@ -25,7 +25,10 @@ components ≈ ±11° of measured attitude — not controller error.)
 
 ### STEP — 1 rad steps on roll/pitch/yaw
 **In-engine MuJoCo renders** (`python -m sim.mujoco.record` — the recording IS
-the benchmark run; metrics bit-identical):
+the benchmark run; metrics bit-identical). The attitude-only controller drifts
+kilometers by design, so the render puppet holds the vehicle at a fixed stage
+point (live attitude + body rates) with a slow-orbit camera — the drift itself
+is in the path-trace GIFs below and the CSVs.
 
 ![mujoco step render](results/recordings/mujoco_step_RENDER.gif)
 ![mujoco sine render](results/recordings/mujoco_sine_RENDER.gif)
