@@ -262,10 +262,46 @@ The `MotorModel` interface and the controller's independence from plant internal
 deliberately swappable — the natural next step is a MAVLink bridge (`pymavlink`/`mavsdk`)
 so the same unmodified `NonlinearP2Controller` can drive an ArduPilot/PX4 SITL instance.
 
+## Path planning: differential flatness + quaternion LQR (`flatness/`)
+
+Implements Choutri & Lagha 2017 (branch `sainath/flatness-path-planning`) — trajectory
+tracking on top of the attitude core, on the same airframe (0.2 kg, paper inertia):
+
+- `flatness/model.py` — the paper's Eq. (8) Newton–Euler quaternion dynamics (RK4,
+  1 kHz) + Eq. (9) X-config rotor mixer with **priority desaturation**: thrust is
+  always delivered exactly; infeasible torques are uniformly scaled. (Naive rotor
+  clipping corrupts the total thrust one-sidedly and runs the altitude loop away —
+  measured.)
+- `flatness/trajectories.py` — flat outputs σ = (x, y, z, ψ) (Eq. 13) for the paper's
+  Section V study case: circle, radius 1 m at 1 m altitude from (−1, 0, 0), min-jerk
+  climb + angular-rate ramp (starts at rest, like the paper's Figs. 4–5).
+- `flatness/flatness.py` — the flatness map (Eqs. 15, 19–21): σ̈ → total thrust T_d and
+  desired quaternion q_d = q_pd ⊗ q_zd, exact to 1e-10 (body-z along the thrust
+  vector, yaw preserved; realized as a Gram–Schmidt frame + Shepperd DCM→quaternion —
+  the same object as the paper's closed-form components, no singularities).
+- `flatness/lqr.py` — the double-loop LQR (Eqs. 17–18, Riccati 22–23): outer per-axis
+  position loop → a_cmd (actuator-aware clamp), inner 6-state attitude loop
+  [q_vec, ω] → τ, gains from `scipy.solve_continuous_are`. Controller at the paper's
+  200 Hz, zero-order hold.
+- `flatness/run_paper.py` — reproduces the study case and writes the paper's figure
+  set (axis responses, 3D trajectory, motor signals, quaternions — Figs. 4–9) to
+  `results/flatness/`.
+
+Measured on the study case (2 circles, settling excluded): **RMS x 1.5 cm, y 3.6 cm,
+z 0.6 cm, radial 2.7 cm** on the 1 m-radius circle at 0.5 m/s, peak rotor thrust 0.57 N
+of the 1.95 N limit (no saturation). Tests: `tests/test_flatness.py` — 12 tests
+(flatness-map exactness, feedforward consistency, mixer round-trip and desaturation,
+LQR stability, closed-loop tracking < 5 cm radial RMS). Paper gaps filled with
+documented assumptions: LQR weights, circle period (0.5 m/s tangential), ESC lag
+(20 ms), actuator limits (the repo vehicle's). Run: `python -m flatness.run_paper`.
+
 ## References
 
 [1] E. Fresk, G. Nikolakopoulos, "Full Quaternion Based Attitude Control for a Quadrotor,"
 *ECC 2013*, pp. 3864–3869. [doi](https://doi.org/10.23919/ECC.2013.6669617)
+
+[2] K. Choutri, M. Lagha, L. Dala, M. Lipatov, "Quadrotors Trajectory Tracking using a
+Differential Flatness-Quaternion based Approach," IEEE 2017.
 
 [2] J. B. Kuipers, *Quaternions and Rotation Sequences*, Princeton Univ. Press, 1998. ·
 [3] J. Diebel, "Representing Attitude," Stanford, 2006. ·
