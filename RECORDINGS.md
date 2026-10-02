@@ -24,6 +24,15 @@ agreement of the RMS tracking error: **0.03°**.
 components ≈ ±11° of measured attitude — not controller error.)
 
 ### STEP — 1 rad steps on roll/pitch/yaw
+**In-engine MuJoCo renders** (`python -m sim.mujoco.record` — the recording IS
+the benchmark run; metrics bit-identical):
+
+![mujoco step render](results/recordings/mujoco_step_RENDER.gif)
+![mujoco sine render](results/recordings/mujoco_sine_RENDER.gif)
+![mujoco flip render](results/recordings/mujoco_flip_RENDER.gif)
+
+Path-trace animations from the CSV logs (reference triad vs drone frame):
+
 ![gym step](results/recordings/gym_pybullet_step.gif)
 ![mujoco step](results/recordings/mujoco_step.gif)
 

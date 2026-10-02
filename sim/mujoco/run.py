@@ -65,7 +65,12 @@ def run(
     noise: float = 0.1,
     gui: bool = False,
     out_root: Path | None = None,
+    frame_cb=None,
 ) -> dict:
+    """frame_cb(t, data, info), if given, is called after every physics step
+    with the live state (info carries q_ref/q_m of the current control step)
+    — sim/mujoco/record.py uses it for in-engine offscreen recordings. It
+    does not touch the benchmark path when None."""
     import mujoco
 
     model = mujoco.MjModel.from_xml_path(str(XML_PATH))
@@ -163,6 +168,9 @@ def run(
         data.xfrc_applied[body_id, 3:6] = torque_world
 
         mujoco.mj_step(model, data)
+
+        if frame_cb is not None:
+            frame_cb(t, data, {"q_ref": q_ref, "q_m": q_m})
 
         if viewer is not None and k % 40 == 0:
             viewer.sync()
