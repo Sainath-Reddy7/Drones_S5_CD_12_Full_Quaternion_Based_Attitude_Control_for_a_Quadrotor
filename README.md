@@ -291,7 +291,10 @@ tracking on top of the attitude core, on the same airframe (0.2 kg, paper inerti
   `mj_objectVelocity`, wrench through the priority-desaturating mixer + the same
   first-order ESC lag (`ActuatorLag`), applied via `xfrc_applied`. Without the ESC
   lag the raw 200 Hz ZOH torque is marginally stable and the lateral mode diverges
-  (measured — the ideal model diverges identically without it).
+  (measured — the ideal model diverges identically without it). `--gui` opens the
+  live MuJoCo viewer; `flatness/record_mujoco.py` records the run in-engine
+  (offscreen) inside `flatness/circle_scene.xml` (reference circle as visual-only
+  markers — physics bit-identical) → `results/recordings/mujoco_flatness_RENDER.gif`.
 
 Measured on the study case (2 circles, settling excluded):
 

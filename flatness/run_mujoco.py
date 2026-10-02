@@ -51,10 +51,16 @@ class ActuatorLag:
 
 
 def run(speed: float = 0.5, cycles: float = 2.0, seed: int = 0, noise: float = 0.0,
-        out_root: Path | None = None, show: bool = False) -> dict:
+        out_root: Path | None = None, show: bool = False,
+        frame_cb=None, xml_path: Path | None = None) -> dict:
+    """`frame_cb(t, data)` (if given) is called at every 200 Hz control tick —
+    the offscreen recorder (flatness/record_mujoco.py) uses it to capture
+    in-engine frames without duplicating the control loop. `xml_path` swaps
+    the plant scene (the recorder uses flatness/circle_scene.xml, which adds
+    only visual-only markers)."""
     import mujoco
 
-    model = mujoco.MjModel.from_xml_path(str(XML_PATH))
+    model = mujoco.MjModel.from_xml_path(str(xml_path or XML_PATH))
     data = mujoco.MjData(model)
     body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "quadrotor")
     dt = float(model.opt.timestep)
@@ -80,6 +86,12 @@ def run(speed: float = 0.5, cycles: float = 2.0, seed: int = 0, noise: float = 0
     q_d = np.array([1.0, 0.0, 0.0, 0.0])
     act = ActuatorLag(vehicle.esc_tau, dt)
     act.T = T  # initialize the filter at hover
+
+    viewer = None
+    if show:
+        import mujoco.viewer
+
+        viewer = mujoco.viewer.launch_passive(model, data)
 
     for k in range(n_steps):
         t = k * dt
@@ -126,6 +138,14 @@ def run(speed: float = 0.5, cycles: float = 2.0, seed: int = 0, noise: float = 0
         data.xfrc_applied[body_id, 3:6] = R @ tau_eff
 
         mujoco.mj_step(model, data)
+
+        if viewer is not None and k % 40 == 0:
+            viewer.sync()
+        if frame_cb is not None and k % ctrl_every == 0 and k > 0:
+            frame_cb(t, data)
+
+    if viewer is not None:
+        viewer.close()
 
     for key in log:
         log[key] = np.asarray(log[key])
