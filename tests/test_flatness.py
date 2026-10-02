@@ -143,3 +143,17 @@ class TestCircleStudyCase:
         ref = traj.evaluate(0.0)
         assert np.allclose(ref.p, [-1.0, 0.0, 0.0], atol=1e-12)
         assert np.linalg.norm(ref.v) < 1e-12
+
+
+class TestMuJoCoAdapter:
+    """The same flatness + double-loop LQR stack flying the repo's MuJoCo
+    contact physics (sim/mujoco/quadrotor.xml, 20 kHz) — cross-simulator
+    validation: tracking must match the ideal Eq. (8) model's accuracy."""
+
+    def test_closed_loop_tracking_mujoco(self):
+        mujoco = pytest.importorskip("mujoco")
+        from flatness.run_mujoco import run
+        s = run(cycles=0.75, out_root=None)
+        assert s["rms_radial_m"] < 0.06, s
+        assert s["rms_z_m"] < 0.02, s
+        assert s["max_rotor_thrust_n"] <= V.rotor_thrust_max + 1e-9

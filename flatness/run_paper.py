@@ -92,7 +92,8 @@ def run(speed: float = 0.5, cycles: float = 2.0, seed: int = 0,
     return summary
 
 
-def _plots(log: dict, vehicle: Vehicle, out_dir: Path, show: bool) -> None:
+def _plots(log: dict, vehicle: Vehicle, out_dir: Path, show: bool,
+           label: str = "", prefix: str = "") -> None:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -108,10 +109,10 @@ def _plots(log: dict, vehicle: Vehicle, out_dir: Path, show: bool) -> None:
         ax.set_ylabel(f"{name} [m]")
         ax.grid(True)
         ax.legend(loc="upper right")
-    axes[0].set_title("Circular path tracking (paper Figs. 4-6)")
+    axes[0].set_title(f"Circular path tracking (paper Figs. 4-6){label}")
     axes[-1].set_xlabel("t [s]")
     fig.tight_layout()
-    fig.savefig(out_dir / "axis_responses.png", dpi=150)
+    fig.savefig(out_dir / f"{prefix}axis_responses.png", dpi=150)
 
     # Fig. 7: full trajectory
     fig = plt.figure(figsize=(6, 6))
@@ -122,10 +123,10 @@ def _plots(log: dict, vehicle: Vehicle, out_dir: Path, show: bool) -> None:
     ax.scatter([-1.0], [0.0], [0.0], marker="*", s=80, color="k", label="start")
     ax.set_zlim(0, 1.6)
     ax.set_xlabel("X [m]"); ax.set_ylabel("Y [m]"); ax.set_zlabel("Z [m]")
-    ax.set_title("Full trajectory (paper Fig. 7)")
+    ax.set_title(f"Full trajectory (paper Fig. 7){label}")
     ax.legend()
     fig.tight_layout()
-    fig.savefig(out_dir / "trajectory_3d.png", dpi=150)
+    fig.savefig(out_dir / f"{prefix}trajectory_3d.png", dpi=150)
 
     # Fig. 8: motor signals (PWM-equivalent: per-rotor thrust)
     thrusts = vehicle.kf * log["w"]
@@ -133,20 +134,20 @@ def _plots(log: dict, vehicle: Vehicle, out_dir: Path, show: bool) -> None:
     for i in range(4):
         ax.plot(t, thrusts[:, i], label=f"motor {i + 1}")
     ax.set_xlabel("t [s]"); ax.set_ylabel("rotor thrust [N]")
-    ax.set_title("Motor commands (paper Fig. 8, PWM-equivalent)")
+    ax.set_title(f"Motor commands (paper Fig. 8, PWM-equivalent){label}")
     ax.grid(True); ax.legend(ncol=4)
     fig.tight_layout()
-    fig.savefig(out_dir / "motor_signals.png", dpi=150)
+    fig.savefig(out_dir / f"{prefix}motor_signals.png", dpi=150)
 
     # Fig. 9: quaternions
     fig, ax = plt.subplots(figsize=(8, 4))
     for i, name in enumerate(("q0", "q1", "q2", "q3")):
         ax.plot(t, log["q"][:, i], label=name)
     ax.set_xlabel("t [s]"); ax.set_ylabel("quaternion component")
-    ax.set_title("Attitude quaternions (paper Fig. 9)")
+    ax.set_title(f"Attitude quaternions (paper Fig. 9){label}")
     ax.grid(True); ax.legend(ncol=4)
     fig.tight_layout()
-    fig.savefig(out_dir / "quaternions.png", dpi=150)
+    fig.savefig(out_dir / f"{prefix}quaternions.png", dpi=150)
 
     if show:
         plt.show()

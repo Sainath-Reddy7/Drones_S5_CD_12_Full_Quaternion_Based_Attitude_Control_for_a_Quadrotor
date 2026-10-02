@@ -286,14 +286,27 @@ tracking on top of the attitude core, on the same airframe (0.2 kg, paper inerti
 - `flatness/run_paper.py` — reproduces the study case and writes the paper's figure
   set (axis responses, 3D trajectory, motor signals, quaternions — Figs. 4–9) to
   `results/flatness/`.
+- `flatness/run_mujoco.py` — the SAME controller stack flying the repo's MuJoCo
+  contact physics (`sim/mujoco/quadrotor.xml`, 20 kHz, floor contact): read state via
+  `mj_objectVelocity`, wrench through the priority-desaturating mixer + the same
+  first-order ESC lag (`ActuatorLag`), applied via `xfrc_applied`. Without the ESC
+  lag the raw 200 Hz ZOH torque is marginally stable and the lateral mode diverges
+  (measured — the ideal model diverges identically without it).
 
-Measured on the study case (2 circles, settling excluded): **RMS x 1.5 cm, y 3.6 cm,
-z 0.6 cm, radial 2.7 cm** on the 1 m-radius circle at 0.5 m/s, peak rotor thrust 0.57 N
-of the 1.95 N limit (no saturation). Tests: `tests/test_flatness.py` — 12 tests
-(flatness-map exactness, feedforward consistency, mixer round-trip and desaturation,
-LQR stability, closed-loop tracking < 5 cm radial RMS). Paper gaps filled with
-documented assumptions: LQR weights, circle period (0.5 m/s tangential), ESC lag
-(20 ms), actuator limits (the repo vehicle's). Run: `python -m flatness.run_paper`.
+Measured on the study case (2 circles, settling excluded):
+
+| plant | RMS x | RMS y | RMS z | RMS radial | peak rotor |
+|---|---|---|---|---|---|
+| paper Eq. (8) model (`run_paper`) | 1.5 cm | 3.6 cm | 0.6 cm | 2.7 cm | 0.57 N |
+| MuJoCo contact physics (`run_mujoco`) | 1.4 cm | 3.7 cm | 0.7 cm | 2.8 cm | 1.00 N |
+
+on the 1 m-radius circle at 0.5 m/s, no rotor saturation (1.95 N limit). Tests:
+`tests/test_flatness.py` — 13 tests (flatness-map exactness, feedforward
+consistency, mixer round-trip and desaturation, LQR stability, closed-loop tracking
+< 5 cm radial RMS on both plants). Paper gaps filled with documented assumptions:
+LQR weights, circle period (0.5 m/s tangential), ESC lag (20 ms), actuator limits
+(the repo vehicle's). Run: `python -m flatness.run_paper` / `python -m
+flatness.run_mujoco`.
 
 ## References
 
