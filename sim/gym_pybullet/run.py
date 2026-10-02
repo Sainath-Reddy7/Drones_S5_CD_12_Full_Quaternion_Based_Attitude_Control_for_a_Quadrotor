@@ -67,14 +67,15 @@ GEOMETRY = RotorGeometry(kf=KF)
 
 
 def _install_urdf() -> None:
-    """Copy paper_quad.urdf into the package assets (idempotent)."""
+    """Sync paper_quad.urdf into the package assets (overwrites: visual
+    updates must propagate; physics tags are unchanged, so benchmarks are
+    unaffected)."""
     import gym_pybullet_drones
 
     assets = Path(gym_pybullet_drones.__file__).parent / "assets"
     src = Path(__file__).with_name("paper_quad.urdf")
     dest = assets / src.name
-    if not dest.exists():
-        shutil.copy(src, dest)
+    shutil.copyfile(src, dest)
 
 
 def _paper_drone_enum():

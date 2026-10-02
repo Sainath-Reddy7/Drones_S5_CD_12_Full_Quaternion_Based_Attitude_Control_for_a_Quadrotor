@@ -16,7 +16,13 @@
        prop3 (+d,+d) front-left    yaw reaction +z
 
      kf chosen so hover sits near 12.8k RPM and max near 25.5k (CF2-like);
-     km = 0.016 * kf (pysitl's yaw-reaction ratio). -->
+     km = 0.016 * kf (pysitl's yaw-reaction ratio).
+
+     VISUALS ONLY (below): every <inertial> and <collision> is unchanged, so
+     the physics is byte-identical with/without this paint job. The airframe
+     is color-coded so attitude is readable in the GUI: RED arms/props at the
+     FRONT (prop0 FR, prop3 FL), BLUE at the REAR (prop1 RR, prop2 RL),
+     light-gray body plate, elevated motor pods. Front = +x body. -->
 
 <robot name="paper_quad">
 
@@ -33,10 +39,14 @@
       <geometry>
         <cylinder radius="0.17" length="0.01"/>
       </geometry>
-      <material name="dark">
-        <color rgba=".25 .25 .28 1"/>
+      <material name="body">
+        <color rgba=".85 .86 .92 1"/>
       </material>
     </visual>
+    <!-- NOTE: base_link must carry exactly ONE <visual> and keep <collision>
+         as its third child: BaseAviary._parseURDFParameters indexes the XML
+         positionally (URDF_TREE[1][2][1][0].attrib['length']). Extra visuals
+         belong on the prop links below. -->
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
@@ -51,6 +61,33 @@
       <mass value="0"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 -0.7853981633974483" xyz="0.053033 -0.053033 0.012"/>
+      <geometry>
+        <box size="0.15 0.018 0.006"/>
+      </geometry>
+      <material name="arm_front0">
+        <color rgba=".95 .12 .1 1"/>
+      </material>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.106066 -0.106066 0.024"/>
+      <geometry>
+        <cylinder radius="0.014" length="0.024"/>
+      </geometry>
+      <material name="pod0">
+        <color rgba=".2 .2 .22 1"/>
+      </material>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.106066 -0.106066 0.040"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.0025"/>
+      </geometry>
+      <material name="disk0">
+        <color rgba="1 .25 .15 .45"/>
+      </material>
+    </visual>
   </link>
   <joint name="prop0_joint" type="fixed">
     <parent link="base_link"/>
@@ -63,6 +100,33 @@
       <mass value="0"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 0.7853981633974483" xyz="-0.053033 -0.053033 0.012"/>
+      <geometry>
+        <box size="0.15 0.018 0.006"/>
+      </geometry>
+      <material name="arm_rear0">
+        <color rgba=".1 .2 .95 1"/>
+      </material>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.106066 -0.106066 0.024"/>
+      <geometry>
+        <cylinder radius="0.014" length="0.024"/>
+      </geometry>
+      <material name="pod1">
+        <color rgba=".2 .2 .22 1"/>
+      </material>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.106066 -0.106066 0.040"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.0025"/>
+      </geometry>
+      <material name="disk1">
+        <color rgba=".2 .4 1 .45"/>
+      </material>
+    </visual>
   </link>
   <joint name="prop1_joint" type="fixed">
     <parent link="base_link"/>
@@ -75,6 +139,33 @@
       <mass value="0"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 2.356194490192345" xyz="-0.053033 0.053033 0.012"/>
+      <geometry>
+        <box size="0.15 0.018 0.006"/>
+      </geometry>
+      <material name="arm_rear1">
+        <color rgba=".1 .2 .95 1"/>
+      </material>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.106066 0.106066 0.024"/>
+      <geometry>
+        <cylinder radius="0.014" length="0.024"/>
+      </geometry>
+      <material name="pod2">
+        <color rgba=".2 .2 .22 1"/>
+      </material>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.106066 0.106066 0.040"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.0025"/>
+      </geometry>
+      <material name="disk2">
+        <color rgba=".2 .4 1 .45"/>
+      </material>
+    </visual>
   </link>
   <joint name="prop2_joint" type="fixed">
     <parent link="base_link"/>
@@ -87,6 +178,33 @@
       <mass value="0"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
+    <visual>
+      <origin rpy="0 0 0.7853981633974483" xyz="0.053033 0.053033 0.012"/>
+      <geometry>
+        <box size="0.15 0.018 0.006"/>
+      </geometry>
+      <material name="arm_front1">
+        <color rgba=".95 .12 .1 1"/>
+      </material>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.106066 0.106066 0.024"/>
+      <geometry>
+        <cylinder radius="0.014" length="0.024"/>
+      </geometry>
+      <material name="pod3">
+        <color rgba=".2 .2 .22 1"/>
+      </material>
+    </visual>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.106066 0.106066 0.040"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.0025"/>
+      </geometry>
+      <material name="disk3">
+        <color rgba="1 .25 .15 .45"/>
+      </material>
+    </visual>
   </link>
   <joint name="prop3_joint" type="fixed">
     <parent link="base_link"/>
