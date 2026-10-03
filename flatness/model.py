@@ -129,7 +129,11 @@ class QuadrotorModel:
         R = quat.to_dcm(q)   # columns = body axes in world (v_world = R v_body)
         thrust_world = R @ np.array([0.0, 0.0, T / self.v.mass])
         v_dot = thrust_world - np.array([0.0, 0.0, G])
-        q_dot = quat.qdot_body(q, omg)
+        # Eq. (6)/(8) literal form: q_dot = 1/2 q ⊗ [0, omega] — omega here is
+        # the BODY rate (shared with the J·omega_dot row below). The 1/2[0,w]⊗q
+        # form is the world-rate identity; using it with body rates diverges
+        # as O(tilt x rate) (validated: 2 s spin test errs 1.5 rad vs 3e-8).
+        q_dot = 0.5 * quat.mul(q, np.concatenate(([0.0], omg)))
         gyro = np.cross(omg, self.J @ omg)
         omg_dot = self.J_inv @ (-gyro + tau)
         return (vv, v_dot, q_dot, omg_dot)

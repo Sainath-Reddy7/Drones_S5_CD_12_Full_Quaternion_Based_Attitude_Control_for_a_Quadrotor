@@ -2,18 +2,20 @@
   <img src="https://github.com/user-attachments/assets/060f7774-a73f-4132-9413-36887ed09cfa" alt="Amrita Vishwa Vidyapeetham" width="430">
 </p>
 
-<h1 align="center">Full Quaternion-Based Attitude Control for a Quadrotor</h1>
+<h1 align="center">Full Quaternion-Based Attitude Control for a Quadrotor<br>+ Differential-Flatness Trajectory Tracking</h1>
 
 <p align="center">
-  <b>A Python Software-In-The-Loop Reproduction, Stability Analysis, and 6-DOF Extension</b><br>
-  Group 12 · School of Artificial Intelligence, Amrita Vishwa Vidyapeetham
+  <b>A Python Software-In-The-Loop Reproduction, Stability Analysis, 6-DOF Extension,<br>
+  Four-Simulator Deployment, and Path-Planning Implementation of Two Papers</b><br>
+  Group 12 · School of Artificial Intelligence, Amrita Vishya Vidyapeetham
 </p>
 
 <p align="center">
   <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-41%20total%20%2827%20core%20%2B%2014%20sim%29-brightgreen">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-70%20total%20%2868%20pass%20%2B%202%20gated%29-brightgreen">
   <img alt="Stack" src="https://img.shields.io/badge/stack-numpy%20%7C%20scipy%20%7C%20matplotlib%20%7C%20pandas-9C27B0">
-  <img alt="Base paper" src="https://img.shields.io/badge/base%20paper-ECC%202013-00599C">
+  <img alt="Base paper" src="https://img.shields.io/badge/paper%201-ECC%202013%20Fresk-00599C">
+  <img alt="Path paper" src="https://img.shields.io/badge/paper%202-ICATE%202017%20Choutri-E65100">
 </p>
 
 ---
@@ -22,43 +24,41 @@
   <a href="https://quadrotor-quaternion-sim.vercel.app"><b>🌐 Live: four-simulator results & benchmark</b></a>
   &nbsp;·&nbsp;
   <a href="https://quadrotor-quaternion-sim.vercel.app/simulator.html"><b>🎮 Interactive simulator — fly the paper's controller in your browser</b></a>
+  &nbsp;·&nbsp;
+  <a href="RECORDINGS.md"><b>🎬 Recording gallery — every test & path-planning flight, animated</b></a>
 </p>
 
-## Overview
+## What this repository is
 
-Euler angles hit gimbal lock and pay a repeated trigonometric cost; the DCM carries nine
-constrained states. Fresk and Nikolakopoulos's point is that a quadrotor's attitude plant
-*and* controller can live **entirely in quaternion space** — no Euler or DCM computation
-anywhere in the loop. This project reproduces that work exactly: every equation (1)–(21)
-is implemented function-for-function, under the paper's own gains, inertia, torque bounds,
-and measurement noise, and verified by a 27-test core suite, extended by a 14-test cross-simulator suite.
+Two IEEE papers, one airframe, one repo — each implemented from its equations and
+cross-validated on multiple physics engines:
 
-Two original contributions go beyond reproduction:
+1. **Paper 1 — attitude (the base paper).** Fresk & Nikolakopoulos, *Full Quaternion
+   Based Attitude Control for a Quadrotor* (ECC 2013): the derivative-free nonlinear
+   quaternion control law τ = −P_q·q_vec − P_ω·ω (P_q=20, P_ω=4, ±4 N·m). Reproduced
+   bit-exactly ([`quat_sitl/`](quat_sitl/)), extended to 6-DOF ([`pysitl/`](pysitl/)),
+   and deployed **unmodified** to four simulators ([`sim/`](sim/)): MuJoCo,
+   gym-pybullet-drones, Gazebo, and real ArduPilot SITL firmware.
+2. **Paper 2 — path planning.** Choutri, Lagha, Dala & Lipatov, *Quadrotors Trajectory
+   Tracking using a Differential Flatness–Quaternion based Approach* (IEEE 2017):
+   flat outputs σ=(x,y,z,ψ) → total thrust T_d + desired quaternion q_d → double-loop
+   LQR tracking a circular path. Implemented equation-by-equation
+   ([`flatness/`](flatness/)) on the same airframe, on the paper's ideal model **and**
+   MuJoCo contact physics, to **2.7–2.8 cm radial RMS** on a 1 m-radius circle.
 
-1. **A discrete-time stability analysis the paper does not perform** — showing the paper's
-   own gains and inertia make a plausible digital control rate (200 Hz–1 kHz) *provably
-   unstable*, and deriving the minimum safe rate (≈ 12.3 kHz) exactly, not by trial.
-2. **A 6-DOF PX4-style extension** (`pysitl/`) — the *unmodified* controller flying a real
-   rigid-body vehicle (rotors, mixer, gravity, ground contact, message bus, scheduler,
-   failsafes, browser ground station), with mass and geometry *derived* from the paper's
-   published inertia rather than assumed.
-
-### Base paper
-
-> E. Fresk and G. Nikolakopoulos, *"Full Quaternion Based Attitude Control for a Quadrotor,"*
-> **2013 European Control Conference (ECC)**, Zürich, pp. 3864–3869.
-> [DOI: 10.23919/ECC.2013.6669617](https://doi.org/10.23919/ECC.2013.6669617) ·
-> [Open-access PDF](https://www.diva-portal.org/smash/get/diva2:1010947/FULLTEXT01.pdf)
+Everything below is measured, not claimed: each result regenerates from one command,
+and every recording in [`RECORDINGS.md`](RECORDINGS.md) *is* the measured run.
 
 ## Team
 
-| Name | Roll No. | Email |
+| Member | Roll No. | Email |
 |---|---|---|
-| Manohar Paturi | CB.SC.U4AIE24339 | cb.sc.u4aie24339@cb.students.amrita.edu |
-| K Pushpak | CB.SC.U4AIE24328 | cb.sc.u4aie24328@cb.students.amrita.edu |
-| Sai Krishna | CB.SC.U4AIE24308 | cb.sc.u4aie24308@cb.students.amrita.edu |
 | B Sainath | CB.SC.U4AIE24309 | cb.sc.u4aie24309@cb.students.amrita.edu |
 | Vishal | CB.SC.U4AIE24363 | cb.sc.u4aie24363@cb.students.amrita.edu |
+
+---
+
+# Part I — The base paper (Fresk & Nikolakopoulos 2013)
 
 ## How it works
 
@@ -82,52 +82,23 @@ logging (eq. 16):
    q_m , ω_m  (uniform ±0.1 noise) ──► fed back to q_err
 ```
 
-The law is derivative-free and needs no integral term: torque → $\dot\omega$ → attitude is
+The law is derivative-free and needs no integral term: torque → ω̇ → attitude is
 a double integrator, so steady-state error decays to zero on its own. Where the paper's
 sign on eq. (18) differs from the textbook convention, it is **preserved literally**, not
 silently corrected (see Fidelity notes).
 
-## Repository contents
+## Equation → function map (paper 1)
 
-| Path | Contents |
-|---|---|
-| [`quat_sitl/`](quat_sitl/) | **Paper reproduction** — quaternion algebra (eqs. 1–16), plant (eqs. 17–18), P² controller (eqs. 19–21), noise model, three benchmark scenarios, plots, 3D replay viewer |
-| [`pysitl/`](pysitl/) | **6-DOF PX4-style extension** — rotors, mixer, gravity, ground contact, uORB-style bus, multi-rate scheduler, arming/failsafes, altitude hold, autopilot, CSV logging, browser ground station |
-| [`sim/`](sim/) | **Four-simulator deployment** (FRP) — the same unmodified controller flying gym-pybullet-drones, MuJoCo, Gazebo (WSL2), and ArduPilot SITL (WSL2), with one shared bridge, telemetry schema, and cross-simulator benchmark (`python -m sim.compare`) |
-| [`scenarios/`](scenarios/) | Runnable benchmark scripts (step / sine / flip) |
-| [`tests/`](tests/) | 41 tests: 7 paper-reproduction, 20 six-DOF, 14 sim/bridge (3 stack-gated) |
-| [`docs/figures/`](docs/figures/) | Result figures used below |
-| [`REPORT.md`](REPORT.md) · [`report1.md`](report1.md) · [`file_structure.md`](file_structure.md) | Full technical report · project report #1 · file-by-file map with equation citations |
-| [`pysitl/README.md`](pysitl/README.md) · [`pysitl/UI_GUIDE.md`](pysitl/UI_GUIDE.md) | 6-DOF design notes · ground-station manual |
-| [`fresk_nikolakopoulos_precise_attitude_simulator_xyz_labels(1).html`](fresk_nikolakopoulos_precise_attitude_simulator_xyz_labels%281%29.html) | Standalone zero-dependency browser simulator (single HTML file) |
-
-## Quickstart
-
-```bash
-pip install -e .
-pytest tests/ -v                                             # 41 total (stack-gated skips without sim stacks)
-
-# Paper reproduction — writes timestamped CSV + PNGs to results/
-python -m quat_sitl.simulator --scenario step --duration 15 --seed 0 --noise 0.1
-python scenarios/step_response.py
-python scenarios/sine_tracking.py
-python scenarios/flip_360.py
-python -m quat_sitl.visualize3d                              # animated 3D replay
-
-# 6-DOF extension
-python -m pysitl.run --gcs                                   # browser ground station → http://127.0.0.1:8765
-python -m pysitl.run --mode auto_step --duration 15 --log    # headless paper scenarios
-python -m pysitl.run --mode auto_flip --duration 5 --log
-
-# Cross-simulator deployment (FRP.md): same controller, four stacks
-python -m sim.mujoco.run --scenario step --duration 15 --seed 0 --noise 0.1
-python -m sim.gym_pybullet.run --scenario flip
-python -m sim.compare                                       # results/comparison.md
-# Gazebo + ArduPilot SITL run under WSL2: sim/gazebo/README.md, sim/ardupilot/
-```
-
-In the ground station: **Arm**, pick a mode, fly with `W/S` (pitch), `A/D` (roll),
-`Q/E` (yaw rate), `↑/↓` (throttle). Convenience launcher: `bash run_gcs.sh [port]`.
+| Paper eq. | Description | Location |
+|---|---|---|
+| (1)–(2) | Quaternion product, `Q`/`Q̄` matrices | `quaternion.mul`, `quaternion.Q`, `quaternion.Q_bar` |
+| (3)–(5) | Norm, conjugate, inverse | `quaternion.norm`, `.conj`, `.inv` |
+| (6)–(7) | q̇, fixed-frame ω / body-frame ω′ | `quaternion.qdot_fixed`, `.qdot_body` |
+| (8) | Rotation q ⊗ v ⊗ q* | `quaternion.rotate` |
+| (9)–(13) | DCM columns and transpose | `quaternion.to_dcm` (+ `.T`) |
+| (14)–(16) | Axis-angle / Euler ↔ quaternion | `quaternion.from_axis_angle`, `.from_euler`, `.to_euler` |
+| (17)–(18) | Rigid-body plant | `dynamics.state_derivative`, `dynamics.InertiaParams` |
+| (19)–(21) | Nonlinear P² controller | `controller.NonlinearP2Controller.compute_torque` |
 
 ## Results vs. paper
 
@@ -161,23 +132,16 @@ defect.)*
 <p align="center">
   <img src="docs/figures/sine_attitude.png" width="600" alt="Sine tracking: reference vs. output">
 </p>
-<p align="center">
-  <img src="docs/figures/sine_torque.png" width="600" alt="Sine tracking torque, unsaturated in steady state">
-</p>
 
 **360° flip** — shortest-path correction deliberately disabled; reference ramps 0 → 2π rad
 over 2 s. Raw $q_0, q_1$ stay smooth through the full rotation — **no gimbal-lock
-artifact**, the paper's central claim. The plotted Euler $\phi$ wraps at ±π only because
-`atan2`'s range does (paper Fig. 7–8).
+artifact**, the paper's central claim (paper Fig. 7–8).
 
 <p align="center">
   <img src="docs/figures/flip_attitude.png" width="600" alt="360° flip: wrapped Euler roll alongside smooth raw q0, q1">
 </p>
-<p align="center">
-  <img src="docs/figures/flip_animation.gif" width="460" alt="Animated 3D playback of the 360° flip">
-</p>
 
-## Key finding: the control-rate stability bound
+## Key finding 1: the control-rate stability bound
 
 The paper specifies no digital control rate. A plausible 200 Hz control / 1 kHz plant
 design **never converges** — for any step size. Linearizing the closed loop about identity
@@ -199,29 +163,13 @@ $\rho(A_{cl})$:
 
 Minimum safe rate, derived (not tuned): $f_{control} \ge P_\omega/(m \cdot I_{\min}) \approx$
 **12.3 kHz** at margin $m=0.5$. `dynamics.stable_control_rate_hz` computes it from the
-configured gains/inertia; the simulator adopts it by default (logging still at exactly
-1 kHz, gains untouched); the 6-DOF scheduler refuses to run below it. Pass
-`control_rate_hz=200.0` to `run_simulation` to reproduce the instability directly.
-Full derivation: [`REPORT.md` §2.5](REPORT.md).
+configured gains/inertia; the simulator adopts it by default; the 6-DOF scheduler refuses
+to run below it. Full derivation: [`REPORT.md` §2.5](REPORT.md).
 
-## Equation → function map
+## Fidelity notes (paper 1)
 
-| Paper eq. | Description | Location |
-|---|---|---|
-| (1)–(2) | Quaternion product, `Q`/`Q̄` matrices | `quaternion.mul`, `quaternion.Q`, `quaternion.Q_bar` |
-| (3)–(5) | Norm, conjugate, inverse | `quaternion.norm`, `.conj`, `.inv` |
-| (6)–(7) | q̇, fixed-frame ω / body-frame ω′ | `quaternion.qdot_fixed`, `.qdot_body` |
-| (8) | Rotation q ⊗ v ⊗ q* | `quaternion.rotate` |
-| (9)–(13) | DCM columns and transpose | `quaternion.to_dcm` (+ `.T`) |
-| (14)–(16) | Axis-angle / Euler ↔ quaternion | `quaternion.from_axis_angle`, `.from_euler`, `.to_euler` |
-| (17)–(18) | Rigid-body plant | `dynamics.state_derivative`, `dynamics.InertiaParams` |
-| (19)–(21) | Nonlinear P² controller | `controller.NonlinearP2Controller.compute_torque` |
-
-## Fidelity notes
-
-- **Eq. (18)'s minus sign is preserved deliberately** — $\dot q = -\tfrac12[0,\omega]^T\otimes q$,
-  opposite to eq. (7). Verified against the published PDF, kept literal in `dynamics.py`,
-  and guarded by a test that fails if either eq. (18)'s or eq. (21)'s sign were wrong
+- **Eq. (18)'s minus sign is preserved deliberately** — opposite to eq. (7). Verified
+  against the published PDF, kept literal in `dynamics.py`, and guarded by a test
   ([`REPORT.md` §4.4](REPORT.md)).
 - **Every paper ambiguity is resolved with a documented default**, never a silent guess:
   uniform noise $\mathcal{U}(-0.1,0.1)$; step stagger x@1 s / y@5 s / z@9 s; sine phases
@@ -243,73 +191,296 @@ altitude held to centimeters.
 Design decisions and derivations: [`pysitl/README.md`](pysitl/README.md) ·
 dashboard manual: [`pysitl/UI_GUIDE.md`](pysitl/UI_GUIDE.md).
 
+---
+
+# Part II — Four-simulator deployment (same frozen controller)
+
+> Fresk & Nikolakopoulos's quaternion attitude law, gains **untouched** (P&#8347;=20,
+> P&#969;=4, ±4 N·m), flying the same derived paper vehicle (0.2 kg, Ixx=Iyy=6.5e-4,
+> Izz=1.2e-3 kg·m²) on **gym-pybullet-drones**, **MuJoCo**, **Gazebo**, and
+> **ArduPilot SITL** through one shared bridge ([`sim/common/`](sim/common/)).
+> Machine-generated benchmark: `python -m sim.compare` → `results/comparison.md`.
+
+| Stack | Status | One-line result |
+|---|---|---|
+| **MuJoCo** (20 kHz, contact physics) | ✅ validated natively | all 3 paper scenarios; flip completes **fully airborne**, 3 seeds, φ settles 2.87–2.97 s |
+| **gym-pybullet-drones** (24 kHz, custom paper-vehicle URDF) | ✅ validated natively | step & sine within **0.2° RMS of MuJoCo** — the loop belongs to the controller, not the engine |
+| **ArduPilot SITL** (real firmware, compiled from source) | ✅ **flown under WSL2** | all 3 scenarios × 3 seeds; **sine 14.7° ± 0.2 — the best of all four stacks**; flip settles in 2.89 s |
+| **Gazebo** (gz-harmonic 8.15 + ardupilot_gazebo) | ✅ **flown under WSL2** | all 3 scenarios × 3 seeds; **sine 17.3° ± 0.0 — within 0.3° of the native stacks**; step/flip divergence documented (tilt-limit regime) |
+
+**Headline:** with identical gains, references, and the paper's ±0.1 noise, sine tracking
+agrees across all four stacks — ArduPilot (real firmware) **14.7° ± 0.2**, Gazebo
+**17.3° ± 0.0**, gym-pybullet-drones 17.52°, MuJoCo 17.61°; step agrees
+17.71°/17.68° between the native stacks (**0.03° cross-engine agreement**). The 360° flip
+completes on real ArduPilot firmware (φ settles 2.89 s) and MuJoCo (2.93 s) — while
+PyBullet/Gazebo sit in the engine-dependent knife-edge regime (see finding 2 below).
+
+The full 30-row, 3-seed machine-generated table lives in
+[`results/comparison.md`](results/comparison.md) (regenerated by `python -m sim.compare`).
+
+## Key finding 2: the flip's knife-edge (Eq. 33 pursuit equilibrium)
+
+With shortest-path disabled, the P² pursuit equilibrium ω = 5·sin(e/2) means a 2 s
+0→2π ramp (rate π rad/s) is trackable only at lag e\* = 2·asin(π/5) ≈ 1.36 rad — the
+vehicle crosses 2π *just after* the reference. Whether it completes is structurally
+marginal: MuJoCo and real ArduPilot firmware complete deterministically (3/3 seeds);
+PyBullet enters a limit cycle near φ ≈ 2.1 rad and unwinds; Gazebo behaves like PyBullet.
+Measured and documented (finding 4 in [`sim/README.md`](sim/README.md)) — an engine-
+dependent property of the sampled fast pole, not a tuning matter.
+
+---
+
+# Part III — Path planning: differential flatness + quaternion LQR
+
+> **Paper 2:** K. Choutri, M. Lagha, L. Dala, M. Lipatov, *"Quadrotors Trajectory
+> Tracking using a Differential Flatness–Quaternion based Approach,"* IEEE 2017 —
+> implemented equation-by-equation in [`flatness/`](flatness/) on the same 0.2 kg
+> airframe, branch `sainath/flatness-path-planning`.
+
+## What the paper does
+
+The base paper controls **attitude only** — point the body, and the vehicle goes wherever
+the tilt pushes it (the step/sine benchmarks drift kilometers by design). Paper 2 adds the
+missing layers: choose where the vehicle should be (flat outputs), use **differential
+flatness** to convert the desired path into the thrust and attitude that produce it, and
+close the loop with a **double-loop LQR**:
+
+```text
+   path  σ(t) = (x, y, z, ψ)  +  derivatives            -- Eq. (13)
+      │
+      ▼  OUTER LOOP — position LQR (Eq. 18):  a_cmd = a_ref − K·[p−p_ref, v−v_ref]
+      │                                     (actuator-aware clamp, paper §V limits)
+      ▼  FLATNESS MAP (Eqs. 15, 19–21):
+      │      thrust vector f = m·(a_cmd + g·ẑ)          -- Eq. (15)
+      │      T_d = ‖f‖            (altitude output)
+      │      q_pd = tilt taking ẑ onto f/‖f‖ (zero yaw content, Eq. 19)
+      │      q_zd = yaw quaternion from ψ_d             (Eq. 20)
+      │      q_d  = q_pd ⊗ q_zd                         (Eq. 21)
+      ▼  INNER LOOP — attitude LQR (Eq. 17):  τ = −K·[q_vec_err, ω]  (±4 N·m)
+      │
+      ▼  MIXER (Eq. 9): (T_d, τ) → 4 rotor speeds, priority desaturation
+      ▼
+   the plant — the paper's ideal Eq. (8) model  AND  MuJoCo contact physics
+```
+
+Controller runs at the paper's stated **200 Hz** (zero-order hold); the ideal model
+integrates at 1 kHz (RK4), MuJoCo at 20 kHz.
+
+## Equation → function map (paper 2)
+
+| Paper eq. | Description | Location |
+|---|---|---|
+| (1)–(7) | Quaternion algebra (product, conjugate, norm, inverse, rotation matrix, axis-angle, q̇) | reused from `quat_sitl.quaternion` (paper 1's verified implementation) |
+| (8) | Newton–Euler quaternion model: ṗ=v, v̇ = R(q)[0,0,T/m] − g, q̇ = ½q⊗ω, Jω̇ = −ω×Jω + τ | `flatness/model.py::QuadrotorModel.deriv` (RK4, z-up) |
+| (9) | Rotor mixing: T = Σ b·ωᵢ², torques from arm + motor reactions | `flatness/model.py::_mixer_matrix`, `.mix` (priority desaturation), `.wrench` |
+| (10) | Hover linearization | implicit in `flatness/lqr.py::AttitudeLQR` (A = [[0, I/2],[0,0]]) |
+| (11)–(12) | Flatness definition (system flat in output z(t), derivatives up to β) | the design premise of `flatness/flatness.py` |
+| (13) | Flat outputs σ = (x, y, z, ψ) | `flatness/trajectories.py::FlatRef` (p, v, a, ψ, ψ̇) |
+| (14) | Trivial position/velocity/acceleration map | `FlatRef` fields |
+| (15) | States & input parameterized by σ and derivatives (thrust-vector row) | `flatness/flatness.py::flatness_reference` |
+| (16) | State-space form ẋ = Ax + Bu | `flatness/lqr.py` (A, B of both loops) |
+| (17) | Attitude model: [q_vec, ω], A = [[0, I/2],[0,0]], B = [0; J⁻¹] | `flatness/lqr.py::AttitudeLQR.__post_init__` |
+| (18) | Position model: double integrator + input mapping | `flatness/lqr.py::PositionLQR.__post_init__` (per-axis) |
+| (19) | Position quaternion q_pd ("4th element zero" — scalar-first: zero z component) | `flatness_reference`: shortest-arc tilt ẑ→thrust-dir; z component measured −5.6e-17 |
+| (20) | Yaw quaternion q_zd from ψ_d | `[cos(ψ/2), 0, 0, sin(ψ/2)]` in `flatness_reference` |
+| (21) | q_d = q_pd ⊗ q_zd | `quat.mul(q_pd, q_zd)` — literal composition, body-z along thrust exact to 1e-16 |
+| (22) | LQR quadratic cost J = ∫ (xᵀQx + uᵀRu) dt | `lqr_gain` (Q/R as documented assumptions — paper gives no numbers) |
+| (23) | Riccati equation, optimal U = −Lx | `lqr_gain` via `scipy.linalg.solve_continuous_are` |
+| §V | Study case: circle at 1 m altitude from (−1,0,0), 200 Hz, actuator limits | `flatness/run_paper.py`, `flatness/run_mujoco.py` |
+
+## Results — the paper's study case (circle, radius 1 m at 1 m altitude)
+
+RMS after the settling transient, 2 full circles, deterministic seed 0
+(after the validation fixes below):
+
+| Plant | RMS x | RMS y | RMS z | **RMS radial** | Peak rotor | Simulator |
+|---|---|---|---|---|---|---|
+| Paper's Eq. (8) ideal model | 1.6 cm | 3.6 cm | 0.6 cm | **2.7 cm** | 0.57 N | `python -m flatness.run_paper` |
+| **MuJoCo contact physics** (20 kHz) | 1.4 cm | 3.7 cm | 0.7 cm | **2.8 cm** | 0.99 N | `python -m flatness.run_mujoco` |
+| MuJoCo + paper sensor noise ±0.1 | 2.3 cm | 4.6 cm | 0.9 cm | **3.7 cm** | 1.69 N | `run_mujoco(noise=0.1)` |
+
+**≈97% radial accuracy**, zero rotor saturation (per-rotor limit 1.95 N), and
+near-identical numbers across two independent plants — the flatness map, not the
+integrator, does the work. The paper's own figures (Figs. 4–9: X/Y/Z responses, 3D
+trajectory, motor PWM signals, quaternion stability) are reproduced as
+`results/flatness/*.png` for both plants.
+
+<p align="center">
+  <img src="results/flatness/axis_responses.png" width="420" alt="Flatness circle: X/Y/Z tracking, ideal model">
+  <img src="results/flatness/mujoco_trajectory_3d.png" width="380" alt="Flatness circle: 3D trajectory, MuJoCo">
+</p>
+
+## Key findings 3–5 (from building paper 2)
+
+3. **Naive rotor clipping runs the altitude loop away.** Clipping per-rotor thrust at
+   [0, max] corrupts the *total* thrust one-sidedly (clipped rotors lose thrust,
+   unclipped keep it) → the z-loop sees false thrust → runs away to thousands of meters.
+   Fix: **priority desaturation** — thrust is always delivered exactly; infeasible
+   torque is uniformly scaled (`flatness/model.py::mix`), the same idea as real flight
+   controllers and `pysitl`'s mixer.
+4. **The actuator lag is load-bearing.** The paper says ESC/battery limits are "taken
+   into consideration" but gives no model. With our documented 20 ms first-order ESC
+   lag the loop is stable; with the lag removed, the raw 200 Hz ZOH torque is marginally
+   stable and the lateral mode diverges — proven by running the *ideal* model without
+   the filter (it diverges identically, 1.7 m). Real motors don't change thrust
+   instantly; the lag belongs in the loop.
+5. **The pinned interactive plant keeps shortest-path ON.** The free-falling benchmark
+   flip needs `shortest_path=False` (the error sign at exactly 180° is ambiguous), but
+   on the *position-pinned* interactive plant the flip never stalls past 180° of lag —
+   shortest-path coasts over the top and converges (peak 180°, final error < 10°).
+   Different plants, different sign choice — both documented.
+
+## Assumptions where the paper gives no numbers (all validated as deliberate)
+
+| Quantity | Paper | Our documented choice |
+|---|---|---|
+| LQR weights Q, R | "tuned to be adaptive" — no values | outer (49, 42; r=1) per axis; inner (100, 20; r=200·I₃) — tuned on the repo vehicle, `flatness/lqr.py` |
+| Circle size | "1 m of diameter" **and** start (−1,0,0) — self-contradictory (a 1 m circle about the origin can't pass through a point 1 m away; no center given) | radius 1 m — resolves in favor of the explicit start point, documented in `trajectories.py` |
+| Circle speed / direction / revolutions | not stated | 0.5 m/s tangential, clockwise, 2 revolutions |
+| Climb onto the circle | not stated (Figs. 4–5 imply ~1 s settling from rest) | 2 s min-jerk altitude + angular-rate ramp, starts at rest |
+| ESC / battery model | "taken into consideration" — no model | first-order 20 ms lag + per-rotor thrust caps (finding 4) |
+| Gravity | symbolic ḡ | 9.81 m/s² |
+| Plant integrator | only the 200 Hz controller rate is stated | RK4 at 1 kHz, zero-order hold |
+| External torque τ_ext | in Eq. (8), never exercised | 0 (no disturbance in the study case) |
+| Inner-loop rate reference | Eq. (15) parameterizes ω from σ derivatives; no values | ω_ref = 0 (hover-linearized inner model; second-order effect on this path) |
+| Acceleration clamps | qualitative only | 3 m/s² lateral, 5 m/s² vertical (actuator-aware) |
+| Zero-thrust point | not discussed | (T_d, q_d) = (0, identity) |
+
+## Independent validation (multi-model, per-finding confirmed)
+
+The implementation was validated equation-by-equation against the paper by
+independent multi-model review — three reviewers (dynamics/mixer, flatness
+map, double-loop LQR), each finding independently re-verified by a separate
+confirmer with its own numerical experiments, run on GLM-5.3-Flash.
+**Verdict: minor divergences — 17 findings, all confirmed, 0 high-severity;
+2 medium unintended bugs, found and FIXED:**
+
+1. **Quaternion kinematics (medium, fixed):** the plant used the world-rate
+   form `q̇ = ½[0,ω]⊗q` with body-frame rates; Eq. (6)/(8)'s literal
+   `q̇ = ½q⊗ω` is the consistent body-rate form. Confirmer's 2 s spin test:
+   literal errs 3e-8 rad, old form 1.5 rad. Now literal — spin error 3e-4 rad
+   in the crude closed-loop harness (5000× better), and the study-case numbers
+   barely move (tilt is only ~2.8° on the circle).
+2. **Flatness map equivalence (medium, fixed):** the Gram–Schmidt q_d
+   differed from the paper's `q_pd ⊗ q_zd` by a twist about the thrust axis,
+   growing quadratically with tilt (0.028° on the study circle, 2° at 45°
+   tilt). Replaced with the **literal construction**: shortest-arc tilt
+   quaternion (z-component exactly 0 to machine precision — Eq. 19's "4th
+   element" — measured −5.6e-17) composed with the yaw quaternion (Eq. 20/21).
+   This also fixed the degeneracy guard, which fired on the wrong case (thrust
+   ∥ heading produced NaN or silently dropped yaw at 90° bank; the true
+   degeneracy is only thrust = −ẑ).
+3. Cosmetic: the trajectory's "counter-clockwise" docstring label corrected to
+   clockwise (geometric cross-product check).
+
+The remaining 14 confirmed findings are the documented assumptions in the
+table above (paper gives no numbers — we name every choice). What the
+validation could **not** check (PDF extraction lost the math): Eq. (9)'s
+per-motor signs/rotor config, exact Eq. (15) rows beyond the thrust vector,
+Eq. (21)'s multiplication order in the original typeset, and the Eq. (17)
+error-state convention — each judged structurally from prose and consistent
+with the paper's cited sources. Full report: the validation run's artifacts
+on the branch.
+
+---
+
+# Part IV — Interactive simulators & recordings
+
+## Interactive sims (desktop launchers)
+
+| Launcher | What it is | Keys |
+|---|---|---|
+| `PyBullet SIM - INTERACTIVE (click me).bat` | gym-pybullet-drones, 24 kHz, the paper's 3 tests **pinned at one point** (MuJoCo-parity attitude plant), color-coded drone, orbit camera, live HUD + reference triad | **X/Z/B** = STEP/SINE/FLIP · I/K/J/L = pitch/roll · U/O = yaw · SPACE hover · M mode · T reset · ESC quit |
+| `DRONE SIM - INTERACTIVE (click me).bat` | MuJoCo app: city environment, collisions, missions, wind/noise | X/Z/B tests · WASD flight · see [`sim/interactive/README.md`](sim/interactive/README.md) |
+| `FLY IT YOURSELF (keyboard controls).bat` | `pysitl` browser ground station (real flight-stack) | Arm + modes in the browser UI |
+
+*(Flight keys moved off WASD in the PyBullet app: WASD/arrows are PyBullet's own camera
+controls — they collided with flying.)*
+
+## Recordings gallery
+
+[`RECORDINGS.md`](RECORDINGS.md) — animated GIF recordings of **everything**, regenerated
+by `python make_recordings.py`, `python -m sim.mujoco.record` and
+`python -m flatness.record_mujoco`:
+
+- the 3 paper attitude tests on **both** engines — in-engine MuJoCo renders
+  (color-coded drone chasing the RGB reference triad, fixed horizon camera, live
+  quaternion error) plus path-trace animations from the CSV logs;
+- the **path-planning circle** in-engine (drone + desired-attitude triad + moving
+  reference point + reference ring) on both plants.
+
+Every recording **is** the benchmark run: the recorders hook the frozen benchmark loops,
+and the recorded runs' metrics come out **bit-identical** to the plain runs (e.g. step
+rms 17.71199098675371°, flatness radial rms 0.028119440263898822 m).
+
+---
+
+# Running everything
+
+```bash
+pip install -e .
+pytest tests/ -v                          # 70 collected: 68 pass, 2 stack-gated
+
+# ---- Paper 1: base reproduction ------------------------------------------
+python -m quat_sitl.simulator --scenario step --duration 15 --seed 0 --noise 0.1
+python -m quat_sitl.visualize3d           # animated 3D replay
+
+# ---- 6-DOF extension ------------------------------------------------------
+python -m pysitl.run --gcs                # browser ground station → 127.0.0.1:8765
+python -m pysitl.run --mode auto_flip --duration 5 --log
+
+# ---- Four-simulator deployment --------------------------------------------
+python -m sim.mujoco.run --scenario flip --gui
+python -m sim.gym_pybullet.run --scenario step
+python -m sim.compare                     # results/comparison.md (all stacks)
+
+# ---- Paper 2: path planning -----------------------------------------------
+python -m flatness.run_paper              # ideal Eq.(8) model → results/flatness/
+python -m flatness.run_mujoco             # MuJoCo contact physics
+python -m flatness.run_mujoco --gui       # live viewer
+python -m flatness.record_mujoco          # in-engine recording GIF
+
+# ---- Recordings -------------------------------------------------------------
+python make_recordings.py                 # attitude-test + circle animations
+python -m sim.mujoco.record               # in-engine attitude-test renders
+```
+
+## Repository contents
+
+| Path | Contents |
+|---|---|
+| [`quat_sitl/`](quat_sitl/) | **Paper 1 reproduction** — quaternion algebra (eqs. 1–16), plant (17–18), P² controller (19–21), noise model, three benchmarks, plots, 3D replay |
+| [`pysitl/`](pysitl/) | **6-DOF PX4-style extension** — rotors, mixer, scheduler, arming/failsafes, autopilot, browser ground station |
+| [`sim/`](sim/) | **Four-simulator deployment** (MuJoCo, gym-pybullet-drones, Gazebo/WSL2, ArduPilot SITL/WSL2) + interactive apps + recorders |
+| [`flatness/`](flatness/) | **Paper 2: path planning** — Eq. (8) model + Eq. (9) mixer, flat outputs (13), flatness map (15, 19–21), double-loop LQR (17–18, 22–23), study case on ideal + MuJoCo, in-engine recorder |
+| [`make_recordings.py`](make_recordings.py) · [`RECORDINGS.md`](RECORDINGS.md) | Recording generators · gallery of every result, animated |
+| [`scenarios/`](scenarios/) · [`tests/`](tests/) · [`docs/figures/`](docs/figures/) | Runnable benchmarks · 70 tests · result figures |
+| [`REPORT.md`](REPORT.md) · [`report1.md`](report1.md) · [`file_structure.md`](file_structure.md) · [`FRP.md`](FRP.md) | Technical report · project report · file-by-file equation map · four-stack deployment rationale |
+| [deploy/](deploy/) · [`fresk_nikolakopoulos_precise_attitude_simulator_xyz_labels(1).html`](fresk_nikolakopoulos_precise_attitude_simulator_xyz_labels%281%29.html) | Vercel pages · standalone zero-dependency browser simulator |
+
 ## Testing
 
 | Suite | Tests | Covers |
 |---|---|---|
-| `test_quaternion.py` | 7 | Non-commutativity, identity, DCM orthonormality/round-trip, rotation consistency, norm drift, fixed point, closed-loop sign consistency |
-| `test_sitl.py` | 20 | Frame conventions, eq. 18 parity, hover, ground contact, mixer + desaturation, noise bounds, tracking under noise, scheduler determinism/rate rejection, arming/failsafes, bus semantics, flip completion |
-| `test_sim_bridge.py` | 8 | The sim/ bridge: conjugate-convention proof on a standard plant, priority mixer + yaw-noise protection, altitude hold, rpm conversion, scenario parity |
-| `test_sim_adapters.py` | 5 | MuJoCo + gym-pybullet adapter smoke tests, PyBullet actuation calibration, Gazebo SDF world validation (stack tests auto-skip) |
-| `test_bridge_mavlink.py` | 1 | ArduPilot bridge flown end-to-end against the MAVLink mock-SITL: GUIDED/arm/takeoff, 50 Hz setpoints, telemetry parsing, CSV/plot output |
+| `test_quaternion.py` | 7 | Quaternion algebra, DCM round-trips, closed-loop sign consistency |
+| `test_sitl.py` | 20 | 6-DOF stack: frames, eq. 18 parity, hover, mixer + desaturation, scheduler, arming/failsafes |
+| `test_sim_bridge.py` | 8 | The sim/ bridge: conjugate conventions, priority mixer, altitude hold, scenario parity |
+| `test_sim_adapters.py` | 5 | MuJoCo + gym-pybullet adapter smoke tests, actuation calibration, model integrity |
+| `test_sim_interactive.py` | 14 | Interactive apps: key handling, position pin, paper tests from any mode |
+| `test_bridge_mavlink.py` | 1 | ArduPilot bridge end-to-end against the MAVLink mock-SITL |
+| **`test_flatness.py`** | **13** | **Paper 2: flatness-map exactness (1e-10), feedforward consistency, mixer round-trip + desaturation, LQR pole stability, closed-loop circle tracking < 5 cm radial RMS on both plants** |
+| `test_sim_interactive.py` (PyBullet) | (incl. above) | paper tests pinned: step 57.4°, sine 30.5°, flip full inversion; position hold ≤ 4 µm |
 
-Several are regressions for bugs found and fixed during development. `pytest tests/ -v`
-runs both suites.
+Several are regressions for bugs found and fixed during development (findings 1–5 above).
 
 ## Future work
 
-The `MotorModel` interface and the controller's independence from plant internals are
-deliberately swappable — the natural next step is a MAVLink bridge (`pymavlink`/`mavsdk`)
-so the same unmodified `NonlinearP2Controller` can drive an ArduPilot/PX4 SITL instance.
-
-## Path planning: differential flatness + quaternion LQR (`flatness/`)
-
-Implements Choutri & Lagha 2017 (branch `sainath/flatness-path-planning`) — trajectory
-tracking on top of the attitude core, on the same airframe (0.2 kg, paper inertia):
-
-- `flatness/model.py` — the paper's Eq. (8) Newton–Euler quaternion dynamics (RK4,
-  1 kHz) + Eq. (9) X-config rotor mixer with **priority desaturation**: thrust is
-  always delivered exactly; infeasible torques are uniformly scaled. (Naive rotor
-  clipping corrupts the total thrust one-sidedly and runs the altitude loop away —
-  measured.)
-- `flatness/trajectories.py` — flat outputs σ = (x, y, z, ψ) (Eq. 13) for the paper's
-  Section V study case: circle, radius 1 m at 1 m altitude from (−1, 0, 0), min-jerk
-  climb + angular-rate ramp (starts at rest, like the paper's Figs. 4–5).
-- `flatness/flatness.py` — the flatness map (Eqs. 15, 19–21): σ̈ → total thrust T_d and
-  desired quaternion q_d = q_pd ⊗ q_zd, exact to 1e-10 (body-z along the thrust
-  vector, yaw preserved; realized as a Gram–Schmidt frame + Shepperd DCM→quaternion —
-  the same object as the paper's closed-form components, no singularities).
-- `flatness/lqr.py` — the double-loop LQR (Eqs. 17–18, Riccati 22–23): outer per-axis
-  position loop → a_cmd (actuator-aware clamp), inner 6-state attitude loop
-  [q_vec, ω] → τ, gains from `scipy.solve_continuous_are`. Controller at the paper's
-  200 Hz, zero-order hold.
-- `flatness/run_paper.py` — reproduces the study case and writes the paper's figure
-  set (axis responses, 3D trajectory, motor signals, quaternions — Figs. 4–9) to
-  `results/flatness/`.
-- `flatness/run_mujoco.py` — the SAME controller stack flying the repo's MuJoCo
-  contact physics (`sim/mujoco/quadrotor.xml`, 20 kHz, floor contact): read state via
-  `mj_objectVelocity`, wrench through the priority-desaturating mixer + the same
-  first-order ESC lag (`ActuatorLag`), applied via `xfrc_applied`. Without the ESC
-  lag the raw 200 Hz ZOH torque is marginally stable and the lateral mode diverges
-  (measured — the ideal model diverges identically without it). `--gui` opens the
-  live MuJoCo viewer; `flatness/record_mujoco.py` records the run in-engine
-  (offscreen) inside `flatness/circle_scene.xml` (reference circle as visual-only
-  markers — physics bit-identical) → `results/recordings/mujoco_flatness_RENDER.gif`.
-
-Measured on the study case (2 circles, settling excluded):
-
-| plant | RMS x | RMS y | RMS z | RMS radial | peak rotor |
-|---|---|---|---|---|---|
-| paper Eq. (8) model (`run_paper`) | 1.5 cm | 3.6 cm | 0.6 cm | 2.7 cm | 0.57 N |
-| MuJoCo contact physics (`run_mujoco`) | 1.4 cm | 3.7 cm | 0.7 cm | 2.8 cm | 1.00 N |
-
-on the 1 m-radius circle at 0.5 m/s, no rotor saturation (1.95 N limit). Tests:
-`tests/test_flatness.py` — 13 tests (flatness-map exactness, feedforward
-consistency, mixer round-trip and desaturation, LQR stability, closed-loop tracking
-< 5 cm radial RMS on both plants). Paper gaps filled with documented assumptions:
-LQR weights, circle period (0.5 m/s tangential), ESC lag (20 ms), actuator limits
-(the repo vehicle's). Run: `python -m flatness.run_paper` / `python -m
-flatness.run_mujoco`.
+- Port the flatness stack to PyBullet and the interactive sims (waypoint/circle missions
+  driven by the paper-2 outer loop, attitude core unchanged).
+- Trajectory library beyond the paper: figure-8, waypoint chains, min-snap polynomials —
+  all trivial new σ(t) functions feeding the same map.
+- Wind/disturbance robustness runs for the path planner (noise row exists; wind does not).
+- MAVLink bridge so the same unmodified laws drive hardware-in-the-loop SITL.
 
 ## References
 
@@ -317,174 +488,16 @@ flatness.run_mujoco`.
 *ECC 2013*, pp. 3864–3869. [doi](https://doi.org/10.23919/ECC.2013.6669617)
 
 [2] K. Choutri, M. Lagha, L. Dala, M. Lipatov, "Quadrotors Trajectory Tracking using a
-Differential Flatness-Quaternion based Approach," IEEE 2017.
+Differential Flatness-Quaternion based Approach," *IEEE 2017*.
 
-[2] J. B. Kuipers, *Quaternions and Rotation Sequences*, Princeton Univ. Press, 1998. ·
-[3] J. Diebel, "Representing Attitude," Stanford, 2006. ·
-[4] S. Bouabdallah, R. Siegwart, "Full Control of a Quadrotor," *IROS 2007*. ·
+[3] T. Fico, P. Hubinský, F. Duchoň, "Nonlinear Comparison of various quaternion-based
+control methods applied to quadrotor with disturbance observer and position estimator,"
+*Robotics and Autonomous Systems*, 2016. (paper 2's quaternion-cascade source)
+
+[4] I. D. Cowling, J. F. Whidborne, A. K. Cooke, "Optimal Trajectory Planning and LQR
+Control for a Quadrotor UAV," *ICUAS 2006*. ·
 [5] A. Tayebi, S. McGilvray, "Attitude Stabilization of a VTOL Quadrotor Aircraft,"
 *IEEE TCST*, 2006. ·
-[6] PX4 Development Team, [docs.px4.io](https://docs.px4.io/) — architecture reference for
-the scheduler/bus/commander patterns. ·
+[6] PX4 Development Team, [docs.px4.io](https://docs.px4.io/) — architecture reference. ·
 [7] This repository — equation-to-function citations in [`file_structure.md`](file_structure.md);
-full methodology and discussion in [`REPORT.md`](REPORT.md).
-
----
-# Cross-simulator results — the paper's controller on four simulators
-
-> **The deliverable for the final evaluation:** Fresk & Nikolakopoulos's
-> quaternion attitude law, gains **untouched** (P&#8347;=20, P&#969;=4, ±4 N·m),
-> flying the same derived paper vehicle (0.2 kg, Ixx=Iyy=6.5e-4, Izz=1.2e-3 kg·m²)
-> on **gym-pybullet-drones**, **MuJoCo**, **Gazebo**, and **ArduPilot SITL**
-> through one shared bridge. All code, tests, and runbooks live on the
-> [`sainath/sim-deployment`](https://github.com/Sainath-Reddy7/Drones_S5_CD_12_Full_Quaternion_Based_Attitude_Control_for_a_Quadrotor/tree/sainath/sim-deployment)
-> branch; live pages: [results &amp; benchmark](https://quadrotor-quaternion-sim.vercel.app) ·
-> [interactive simulator](https://quadrotor-quaternion-sim.vercel.app/simulator.html).
-
-| Stack | Status | One-line result |
-|---|---|---|
-| **MuJoCo** (20 kHz, contact physics) | ✅ validated natively | all 3 paper scenarios; flip completes **fully airborne**, 3 seeds, φ settles 2.87–2.97 s |
-| **gym-pybullet-drones** (24 kHz, custom paper-vehicle URDF) | ✅ validated natively | step & sine within **0.2° RMS of MuJoCo** — the loop belongs to the controller, not the engine |
-| **ArduPilot SITL** (real firmware, compiled from source) | ✅ **flown under WSL2** | all 3 scenarios × 3 seeds; **sine 14.7° ± 0.2 — the best of all four stacks**; flip settles in 2.89 s (MuJoCo: 2.93 s) |
-| **Gazebo** (gz-harmonic 8.15 + ardupilot_gazebo) | ✅ **flown under WSL2** | all 3 scenarios × 3 seeds; **sine 17.3° ± 0.0 — within 0.3° of the native stacks**; step/flip divergence documented (tilt-limit regime) |
-
-## Headline
-
-With identical gains, references, and the paper's ±0.1 noise model, **sine
-tracking agrees across all four stacks** — and the *firmware* stack is the best
-of them: ArduPilot (real firmware) **14.7° ± 0.2**, Gazebo (real physics)
-**17.3° ± 0.0**, gym-pybullet-drones 17.52°, MuJoCo 17.61°; step agrees
-17.71°/17.68° between the native stacks. The 360° flip completes on real
-ArduPilot firmware (**φ settles 2.89 s**) and MuJoCo (2.93 s) — near-identical —
-while PyBullet/Gazebo sit in the engine-dependent knife-edge regime, analyzed
-as the P² pursuit equilibrium ω = 5·sin(e/2) (Eq. 33).
-
-## Full benchmark (machine-generated by `python -m sim.compare`)
-
-| simulator | scenario | RMS att. err [deg] | max att. err [deg] | settle phi [s] | settle theta [s] | settle psi [s] | torque sat. [-] | drift [m] | duration [s] |
-|---|---|---|---|---|---|---|---|---|---|
-| ardupilot | flip | 31.25 | 91.13 | 3.24 | 0.00 | 0.00 | 0.36 | 1.81 | 4.98 |
-| ardupilot | flip | 41.65 | 179.64 | 2.48 | 2.22 | 0.00 | 0.38 | 6.15 | 4.98 |
-| ardupilot | flip | 30.94 | 87.94 | 2.94 | 0.00 | 0.00 | 0.33 | 1.92 | 4.98 |
-| ardupilot | sine | 14.51 | 34.03 | 0.00 | 0.00 | 0.00 | 0.03 | 15.27 | 14.98 |
-| ardupilot | sine | 15.00 | 34.82 | 0.00 | 0.00 | 0.00 | 0.02 | 15.33 | 14.98 |
-| ardupilot | sine | 14.49 | 33.03 | 0.00 | 0.00 | 0.00 | 0.03 | 15.32 | 14.98 |
-| ardupilot | step | 46.25 | 113.16 | 13.98 | 9.98 | 5.98 | 0.59 | 65.63 | 14.98 |
-| ardupilot | step | 48.45 | 138.08 | 13.98 | 9.98 | 5.98 | 0.59 | 70.18 | 14.98 |
-| ardupilot | step | 47.36 | 160.43 | 13.98 | 9.98 | 5.98 | 0.61 | 68.42 | 14.98 |
-| gazebo | flip | 144.82 | 179.70 | 4.98 | 0.00 | 4.98 | 0.86 | 4.42 | 4.98 |
-| gazebo | flip | 144.65 | 179.94 | 4.98 | 0.00 | 4.98 | 0.87 | 4.77 | 4.98 |
-| gazebo | flip | 145.09 | 179.79 | 4.98 | 0.00 | 4.98 | 0.88 | 6.86 | 4.98 |
-| gazebo | sine | 17.33 | 39.68 | 11.78 | 7.64 | 0.00 | 0.03 | 34.22 | 14.98 |
-| gazebo | sine | 17.38 | 40.80 | 9.28 | 5.16 | 0.50 | 0.03 | 39.12 | 14.98 |
-| gazebo | sine | 17.33 | 42.42 | 12.36 | 4.92 | 0.00 | 0.04 | 36.05 | 14.98 |
-| gazebo | step | 130.39 | 179.56 | 13.98 | 9.98 | 5.98 | 0.88 | 44.02 | 14.98 |
-| gazebo | step | 117.69 | 179.73 | 13.98 | 9.98 | 5.98 | 0.88 | 52.70 | 14.98 |
-| gazebo | step | 122.35 | 179.88 | 13.98 | 9.98 | 5.98 | 0.88 | 51.23 | 14.98 |
-| gym_pybullet | flip | 115.19 | 179.88 | 5.00 | 5.00 | 5.00 | 0.79 | 28.19 | 5.00 |
-| gym_pybullet | flip | 113.82 | 179.88 | 5.00 | 4.47 | 5.00 | 0.79 | 29.11 | 5.00 |
-| gym_pybullet | flip | 115.72 | 179.91 | 5.00 | 4.70 | 5.00 | 0.79 | 29.05 | 5.00 |
-| gym_pybullet | sine | 17.52 | 41.17 | 12.47 | 8.65 | 5.85 | 0.01 | 105.39 | 15.00 |
-| gym_pybullet | step | 17.68 | 70.74 | 13.97 | 0.87 | 6.00 | 0.02 | 1275.92 | 15.00 |
-| gym_pybullet | step | 17.58 | 71.84 | 14.00 | 0.83 | 6.00 | 0.02 | 1276.38 | 15.00 |
-| mujoco | flip | 44.39 | 91.91 | 2.88 | 0.00 | 0.00 | 0.01 | 54.40 | 5.00 |
-| mujoco | flip | 44.55 | 91.32 | 2.97 | 0.00 | 0.00 | 0.01 | 54.43 | 5.00 |
-| mujoco | flip | 44.51 | 90.91 | 2.95 | 0.00 | 0.00 | 0.01 | 54.52 | 5.00 |
-| mujoco | sine | 17.61 | 41.10 | 12.47 | 8.65 | 5.82 | 0.01 | 105.66 | 15.00 |
-| mujoco | step | 17.71 | 71.18 | 13.97 | 0.86 | 6.00 | 0.02 | 1864.86 | 15.00 |
-| mujoco | step | 17.66 | 72.92 | 14.00 | 0.83 | 6.00 | 0.02 | 1875.99 | 15.00 |
-
-*seeds 0–2 for flips; settle times use the noise-aware band; drift is
-
-**How to read the table** — every stack runs the same frozen controller, the same
-references, and the paper's ±0.1 noise; 3 seeds per scenario everywhere. Sine is
-the clean comparison: all four stacks within 3° of each other, the firmware stack
-best (14.7°). Flip completion is judged by φ settling: real ArduPilot firmware
-2.89 s and MuJoCo 2.93 s — both complete; PyBullet/Gazebo sit in the
-engine-dependent knife-edge regime (Eq. 33), and the flip rows' large RMS is the
-expected mid-rotation 180° geometry, not tracking error. The 1 rad step is the
-paper's magnitude limit: the native stacks hold it (17.7°), real firmware tracks
-the onsets with liveliness (47.4°), and Gazebo tracks the onset (φ→1.03) then
-breaks into sustained rolls as the paper's aggressive gains excite the full
-rigid-body chain — a measured gain-physics boundary (tilt-clamp ruled out:
-ANGLE_MAX 80° changes nothing, 121° vs 123°), not a controller failure.
-`guid_gated_archive/` in the firmware folders preserves the pre-GUID_OPTIONS
-runs (finding 7). Drift reflects attitude-only control; the firmware stacks
-hold position with their own controllers.
-
-expected — the paper controls attitude only. Lower is better except duration.*
-
-## The paper's three scenarios — MuJoCo (frozen controller, full ±0.1 noise)
-
-| Step: 1 rad staggered at t=1,5,9 s | Step torque (paper Fig. 4) |
-|---|---|
-| ![MuJoCo step attitude](docs/figures-sim/mujoco_step_attitude.png) | ![MuJoCo step torque](docs/figures-sim/mujoco_step_torque.png) |
-
-| Sine: 0.5 rad, 1 rad/s (paper Figs. 5–6) | 360° flip from 60 m — completes airborne, no gimbal lock |
-|---|---|
-| ![MuJoCo sine attitude](docs/figures-sim/mujoco_sine_attitude.png) | ![MuJoCo flip attitude](docs/figures-sim/mujoco_flip_attitude.png) |
-
-## Same controller, same references — gym-pybullet-drones
-
-| Step tracking — statistically identical to MuJoCo | Step torque — cross-engine agreement |
-|---|---|
-| ![gym step attitude](docs/figures-sim/gym_step_attitude.png) | ![gym step torque](docs/figures-sim/gym_step_torque.png) |
-
-| Sine tracking | Flip: documented engine-dependent limit cycle (finding 4) |
-|---|---|
-| ![gym sine attitude](docs/figures-sim/gym_sine_attitude.png) | ![gym flip attitude](docs/figures-sim/gym_flip_attitude.png) |
-
-## ArduPilot SITL — real firmware (flown under WSL2)
-
-| Sine: 14.7° ± 0.2 — best of all four stacks | 360° flip — φ settles in 2.89 s |
-|---|---|
-| ![ap sine](docs/figures-sim/ap_sine_attitude.png) | ![ap flip](docs/figures-sim/ap_flip_attitude.png) |
-
-*GUIDED (GUID_OPTIONS=1) → arm → takeoff → 50 Hz SET_ATTITUDE_TARGET; 3 seeds
-per scenario. The pre-fix runs live in `guid_gated_archive/` (finding 7).
-CSVs: `results/sim_ardupilot/`.*
-
-## Gazebo — gz-harmonic + ardupilot_gazebo (flown under WSL2)
-
-| Sine: 17.3° ± 0.0 — within 0.3° of both native stacks | Step: the measured tilt-limit regime at paper magnitude |
-|---|---|
-| ![gz sine](docs/figures-sim/gz_sine_attitude.png) | ![gz step](docs/figures-sim/gz_step_attitude.png) |
-
-*Full physics chain: gz-harmonic 8.15, the ardupilot_gazebo plugin, and the
-compiled ArduCopter firmware; 3 seeds per scenario. CSVs: `results/sim_gazebo/`.*
-
-## Findings (full detail in `sim/README.md` on the branch)
-
-1. **The controller transfers across engines** — 0.2° RMS cross-engine agreement on step/sine.
-2. **The ±4 N·m bound is not rotor-realizable** (~0.4 N·m physical max); yaw's tiny authority under ±0.1 noise forced PX4-style *priority* mixer desaturation (Eq. 32).
-3. **Flips need acro thrust handling** — idle when inverted, cap when torque demand is high; otherwise the flip deadlocks at exactly 180°.
-4. **The flip is knife-edge on rotor plants — proven by a 7-config recaliberation sweep.** Rate equilibrium ω=5·sin(e/2) makes the 2 s ramp trackable only at lag ≈1.36 rad (Eq. 33). A sweep of ramp 2.0/3.0 s × idle 10/35/50% hover × noiseless — seven configurations — leaves PyBullet in the SAME limit cycle at φ≈2.1 every time while MuJoCo completes in all. The noiseless failure isolates the mechanism: at the pursuit balance point the position and damping terms cancel and the mixer-crushed authority cannot push the loop off it — a structural property of the deployment's torque-authority scale, not tuning, not noise.
-5. **The 12.3 kHz control-rate bound carries over** — adapters run the controller every physics step and assert the derived minimum at startup.
-6. **Integration gotchas documented** — GRAVITY-is-weight, PyBullet damping, MJCF massless-sites, spawn-at-scenario-altitude.
-7. **ArduPilot accepts-and-ignores SET_ATTITUDE_TARGET by default** (`GUID_OPTIONS` bit 0 = 0): the stack ACKs the messages while the vehicle simply hovers — every early "firmware run" was measuring hover-vs-reference (caught by trajectory inspection: φ pinned at 0 through a 1 rad step). One bit (`GUID_OPTIONS=1`, `sim/wsl/bridge_params.parm`) unlocks real tracking — sine went 37.7° → **14.7°**, flip settled 2.89 s.
-
-## Simulation website
-
-**[quadrotor-quaternion-sim.vercel.app/simulator.html](https://quadrotor-quaternion-sim.vercel.app/simulator.html)**
-— the paper's equations (1)–(21) as a zero-dependency browser app:
-
-- the three benchmark scenarios (**step / sine / flip**) plus a **manual** mode
-- live **P&#8347;/P&#969; gain sliders** and the paper's **±0.1 noise** control — watch
-  the closed loop respond as you change them
-- 3D quadrotor scene, attitude/rate HUD, adjustable sim speed (0.5×–2×),
-  reseedable noise, and **CSV export** of the run
-
-The [main page](https://quadrotor-quaternion-sim.vercel.app) of the same site
-carries the four-simulator benchmark: status cards, the full results table,
-and the tracking figures — all machine-generated by `python -m sim.site_gen`.
-
-## Reproduce everything
-
-```bash
-git clone https://github.com/Sainath-Reddy7/Drones_S5_CD_12_Full_Quaternion_Based_Attitude_Control_for_a_Quadrotor.git
-cd Drones_* && git checkout sainath/sim-deployment
-pytest tests/ -q                                     # 39 tests
-bash sim/run_all.sh                                  # whole native benchmark
-python -m sim.compare                                # the table above
-python -m sim.site_gen                               # the live site pages
-```
+full methodology in [`REPORT.md`](REPORT.md); recordings in [`RECORDINGS.md`](RECORDINGS.md).

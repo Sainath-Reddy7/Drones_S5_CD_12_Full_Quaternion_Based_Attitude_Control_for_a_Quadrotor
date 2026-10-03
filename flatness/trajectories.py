@@ -71,7 +71,8 @@ class CircleTrajectory:
 
     def evaluate(self, t: float) -> FlatRef:
         """sigma(t) = (x, y, z, psi) with derivatives, starting at (-1, 0, 0):
-        p(t) = (-r cos(th), r sin(th), z(t)) — counter-clockwise."""
+        p(t) = (-r cos(th), r sin(th), z(t)) — clockwise seen from +z
+        (cross(z, dp/dt) points inward)."""
         th, th_d, th_dd = self._theta(t)
         p = np.array([-self.r * np.cos(th), self.r * np.sin(th), 0.0])
         v = self.r * np.array([th_d * np.sin(th), th_d * np.cos(th), 0.0])
